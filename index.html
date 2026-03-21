@@ -30,15 +30,13 @@
 
     const { useState, useEffect } = React;
 
-    // --- 🌟 클라우드 데이터베이스(Firebase) 설정 🌟 ---
-    // Vercel 배포 후 실시간 연동을 원하시면 아래 주석(//)을 지우고 발급받은 코드를 덮어쓰세요!
-    const myFirebaseConfig = {
-      // apiKey: "여기에_입력",
-      // authDomain: "여기에_입력",
-      // projectId: "여기에_입력",
-      // storageBucket: "여기에_입력",
-      // messagingSenderId: "여기에_입력",
-      // appId: "여기에_입력"
+const firebaseConfig = {
+  apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
+  authDomain: "gy-agenda-board.firebaseapp.com",
+  projectId: "gy-agenda-board",
+  storageBucket: "gy-agenda-board.firebasestorage.app",
+  messagingSenderId: "636849502282",
+  appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
     };
 
     // --- 클라우드 데이터베이스 초기화 ---
