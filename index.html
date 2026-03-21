@@ -30,15 +30,34 @@
 
     const { useState, useEffect } = React;
 
+    // --- 🌟 클라우드 데이터베이스(Firebase) 설정 🌟 ---
+    // Vercel 배포 후 실시간 연동을 원하시면 아래 주석(//)을 지우고 발급받은 코드를 덮어쓰세요!
+    const myFirebaseConfig = {
+      // apiKey: "여기에_입력",
+      // authDomain: "여기에_입력",
+      // projectId: "여기에_입력",
+      // storageBucket: "여기에_입력",
+      // messagingSenderId: "여기에_입력",
+      // appId: "여기에_입력"
+    };
+
     // --- 클라우드 데이터베이스 초기화 ---
-    let app, auth, db, appId;
+    let app, auth, db;
+    let appId = 'guyoung-agenda-board'; // 데이터 고유 보관함 이름
+
     try {
-      if (typeof __firebase_config !== 'undefined') {
+      if (myFirebaseConfig && myFirebaseConfig.apiKey) {
+        // 선생님이 직접 입력한 설정으로 연결 (Vercel 용)
+        app = initializeApp(myFirebaseConfig);
+        auth = getAuth(app);
+        db = getFirestore(app);
+      } else if (typeof __firebase_config !== 'undefined') {
+        // 현재 화면(Canvas)용 자동 연결
         const firebaseConfig = JSON.parse(__firebase_config);
         app = initializeApp(firebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
-        appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        appId = typeof __app_id !== 'undefined' ? __app_id : appId;
       }
     } catch (e) {
       console.error("클라우드 연동을 초기화할 수 없습니다. 로컬 모드로 작동합니다.", e);
