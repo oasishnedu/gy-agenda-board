@@ -6,8 +6,8 @@
   <title>구영초 교직원다모임 보드</title>
   
   <!-- React & Babel & Tailwind CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin crossorigin></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -31,26 +31,28 @@
     const { useState, useEffect } = React;
 
     // --- 🌟 클라우드 데이터베이스(Firebase) 설정 🌟 ---
-    // Vercel 배포 후 실시간 연동을 원하시면 아래 주석(//)을 지우고 발급받은 코드를 덮어쓰세요!
-   const firebaseConfig = {
-  apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
-  authDomain: "gy-agenda-board.firebaseapp.com",
-  projectId: "gy-agenda-board",
-  storageBucket: "gy-agenda-board.firebasestorage.app",
-  messagingSenderId: "636849502282",
-  appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
+    // Vercel 배포 후 실시간 연동을 위한 설정 (변수명 일치 완료)
+    const myFirebaseConfig = {
+      apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
+      authDomain: "gy-agenda-board.firebaseapp.com",
+      projectId: "gy-agenda-board",
+      storageBucket: "gy-agenda-board.firebasestorage.app",
+      messagingSenderId: "636849502282",
+      appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
     };
 
     // --- 클라우드 데이터베이스 초기화 ---
     let app, auth, db;
     let appId = 'guyoung-agenda-board'; // 데이터 고유 보관함 이름
+    let isCustomFirebase = false; // 선생님의 커스텀 파이어베이스 연결 여부 확인
 
     try {
-      if (myFirebaseConfig && myFirebaseConfig.apiKey) {
+      if (typeof myFirebaseConfig !== 'undefined' && myFirebaseConfig.apiKey) {
         // 선생님이 직접 입력한 설정으로 연결 (Vercel 용)
         app = initializeApp(myFirebaseConfig);
         auth = getAuth(app);
         db = getFirestore(app);
+        isCustomFirebase = true;
       } else if (typeof __firebase_config !== 'undefined') {
         // 현재 화면(Canvas)용 자동 연결
         const firebaseConfig = JSON.parse(__firebase_config);
@@ -102,9 +104,11 @@
         if (!auth) return;
         const initAuth = async () => {
           try {
-            if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+            // 🌟 수정됨: 선생님의 커스텀 파이어베이스 환경에서는 캔버스용 토큰을 사용하면 에러(token-mismatch)가 나므로 분기 처리합니다.
+            if (!isCustomFirebase && typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
               await signInWithCustomToken(auth, __initial_auth_token);
             } else {
+              // Vercel(선생님 개인 파이어베이스) 환경에서는 익명 로그인 사용
               await signInAnonymously(auth);
             }
           } catch (e) {
@@ -151,25 +155,25 @@
           setAgendas(data);
         }, (err) => console.error("안건 연동 에러:", err));
 
-        // 2. 일정 실시간 연동 (에러 수정: onSnapshot 내부에서 setDoc 호출 제거)
+        // 2. 일정 실시간 연동
         const scheduleRef = collection(db, 'artifacts', appId, 'public', 'data', 'schedule');
         const unsubSchedule = onSnapshot(scheduleRef, (snapshot) => {
           const docSnap = snapshot.docs.find(d => d.id === 'current');
           if (docSnap && docSnap.exists()) {
             setSchedule(docSnap.data());
           } else {
-            setSchedule(defaultSchedule); // DB가 비어있으면 로컬 화면에만 기본값 표시 (무한루프 방지)
+            setSchedule(defaultSchedule); // DB가 비어있으면 로컬 화면에만 기본값 표시
           }
         }, (err) => console.error("일정 연동 에러:", err));
 
-        // 3. 지난 회의록 실시간 연동 (에러 수정: onSnapshot 내부에서 setDoc 호출 제거)
+        // 3. 지난 회의록 실시간 연동
         const notesRef = collection(db, 'artifacts', appId, 'public', 'data', 'pastNotes');
         const unsubNotes = onSnapshot(notesRef, (snapshot) => {
           const docSnap = snapshot.docs.find(d => d.id === 'all');
           if (docSnap && docSnap.exists() && docSnap.data().notes) {
             setPastNotes(docSnap.data().notes);
           } else {
-            setPastNotes(defaultPastNotes); // DB가 비어있으면 로컬 화면에만 기본값 표시 (무한루프 방지)
+            setPastNotes(defaultPastNotes); // DB가 비어있으면 로컬 화면에만 기본값 표시
           }
         }, (err) => console.error("회의록 연동 에러:", err));
 
@@ -216,7 +220,7 @@
 
       const handleAdminLoginSubmit = (e) => {
         e.preventDefault();
-        // 🌟 비밀번호를 변경하려면 아래 '1234' 부분을 원하시는 암호로 수정하세요!
+        // 🌟 비밀번호를 변경하려면 아래 '3500' 부분을 원하시는 암호로 수정하세요!
         if (adminPassword === '3500') { 
           setIsAdmin(true); setShowAdminModal(false); setAdminPassword(''); setLoginError(false);
         } else {
