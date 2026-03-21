@@ -239,6 +239,25 @@
       const handleEditPastNoteChange = (id, newContent) => setEditPastNotesForm(editPastNotesForm.map(n => n.id === id ? { ...n, content: newContent } : n));
       const handleDeletePastNote = (id) => setEditPastNotesForm(editPastNotesForm.filter(n => n.id !== id));
 
+      // 🌟 신규 기능: 현재 등록된 안건들을 바탕으로 회의록 초안 자동 생성
+      const handleLoadCurrentAgendas = () => {
+        const dateObj = new Date(schedule.date);
+        const dateStr = !isNaN(dateObj.getTime()) 
+          ? `${dateObj.getFullYear().toString().slice(2)}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
+          : '';
+        
+        let draft = `${schedule.title} 결과 공유 (${dateStr})\n\n[논의 안건]\n`;
+        agendas.forEach((a, i) => {
+          draft += `${i + 1}. ${a.title} (제안: ${a.author})\n`;
+          if (a.description) {
+            draft += `  - 제안 내용: ${a.description}\n`;
+          }
+          draft += `  - 논의 결과: \n\n`;
+        });
+        
+        setEditPastNotesForm([{ id: Date.now().toString(), content: draft.trim() }, ...editPastNotesForm]);
+      };
+
       const handleSavePastNotes = async () => {
         const validNotes = editPastNotesForm.filter(n => n.content.trim() !== '');
         if (db) {
@@ -366,12 +385,27 @@
                           </button>
                         </div>
                       ))}
-                      <button
-                        onClick={handleAddPastNote}
-                        className="w-full py-3 border-2 border-dashed border-indigo-200 text-indigo-500 rounded-md hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex items-center justify-center gap-1.5 font-medium text-sm sm:text-base mt-2"
-                      >
-                        <PlusCircle className="w-4 h-4" />새 회의록 추가
-                      </button>
+                      
+                      {/* 🌟 버튼 그룹 (빈 회의록 추가 & 마감된 안건 불러오기) */}
+                      <div className="flex gap-2 mt-1">
+                        <button
+                          onClick={handleAddPastNote}
+                          className="flex-1 py-3 border-2 border-dashed border-indigo-200 text-indigo-500 rounded-md hover:bg-indigo-50 hover:border-indigo-300 transition-colors flex items-center justify-center gap-1.5 font-medium text-sm sm:text-base"
+                        >
+                          <PlusCircle className="w-4 h-4" />빈 회의록 추가
+                        </button>
+                        
+                        {/* 다모임 시간이 지나고, 안건이 있을 때만 노출되는 초안 자동 생성 버튼 */}
+                        {!isRegistrationOpen && agendas.length > 0 && (
+                          <button
+                            onClick={handleLoadCurrentAgendas}
+                            className="flex-1 py-3 border-2 border-dashed border-purple-200 text-purple-600 rounded-md hover:bg-purple-50 hover:border-purple-300 transition-colors flex items-center justify-center gap-1.5 font-medium text-sm sm:text-base"
+                            title="현재 안건 목록을 바탕으로 회의록 초안을 만듭니다."
+                          >
+                            <List className="w-4 h-4" />이번 회의록 초안 만들기
+                          </button>
+                        )}
+                      </div>
                     </div>
                   ) : (
                     <div className="flex flex-col gap-2.5">
