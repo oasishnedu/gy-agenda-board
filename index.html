@@ -6,8 +6,8 @@
   <title>구영초 교직원다모임 보드</title>
   
   <!-- React & Babel & Tailwind CDN -->
-  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+  <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin crossorigin></script>
+  <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin crossorigin></script>
   <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
@@ -30,7 +30,9 @@
 
     const { useState, useEffect } = React;
 
-const firebaseConfig = {
+    // --- 🌟 클라우드 데이터베이스(Firebase) 설정 🌟 ---
+    // Vercel 배포 후 실시간 연동을 원하시면 아래 주석(//)을 지우고 발급받은 코드를 덮어쓰세요!
+   const firebaseConfig = {
   apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
   authDomain: "gy-agenda-board.firebaseapp.com",
   projectId: "gy-agenda-board",
@@ -147,31 +149,29 @@ const firebaseConfig = {
           const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
           data.sort((a, b) => b.createdAt - a.createdAt); // 최신순 정렬
           setAgendas(data);
-        }, (err) => console.error(err));
+        }, (err) => console.error("안건 연동 에러:", err));
 
-        // 2. 일정 실시간 연동
+        // 2. 일정 실시간 연동 (에러 수정: onSnapshot 내부에서 setDoc 호출 제거)
         const scheduleRef = collection(db, 'artifacts', appId, 'public', 'data', 'schedule');
         const unsubSchedule = onSnapshot(scheduleRef, (snapshot) => {
           const docSnap = snapshot.docs.find(d => d.id === 'current');
-          if (docSnap) {
+          if (docSnap && docSnap.exists()) {
             setSchedule(docSnap.data());
           } else {
-            // DB가 비어있으면 초기값 생성
-            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'schedule', 'current'), defaultSchedule);
+            setSchedule(defaultSchedule); // DB가 비어있으면 로컬 화면에만 기본값 표시 (무한루프 방지)
           }
-        }, (err) => console.error(err));
+        }, (err) => console.error("일정 연동 에러:", err));
 
-        // 3. 지난 회의록 실시간 연동
+        // 3. 지난 회의록 실시간 연동 (에러 수정: onSnapshot 내부에서 setDoc 호출 제거)
         const notesRef = collection(db, 'artifacts', appId, 'public', 'data', 'pastNotes');
         const unsubNotes = onSnapshot(notesRef, (snapshot) => {
           const docSnap = snapshot.docs.find(d => d.id === 'all');
-          if (docSnap && docSnap.data().notes) {
+          if (docSnap && docSnap.exists() && docSnap.data().notes) {
             setPastNotes(docSnap.data().notes);
           } else {
-            // DB가 비어있으면 초기값 생성
-            setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pastNotes', 'all'), { notes: defaultPastNotes });
+            setPastNotes(defaultPastNotes); // DB가 비어있으면 로컬 화면에만 기본값 표시 (무한루프 방지)
           }
-        }, (err) => console.error(err));
+        }, (err) => console.error("회의록 연동 에러:", err));
 
         return () => { unsubAgendas(); unsubSchedule(); unsubNotes(); };
       }, [user]);
@@ -216,6 +216,7 @@ const firebaseConfig = {
 
       const handleAdminLoginSubmit = (e) => {
         e.preventDefault();
+        // 🌟 비밀번호를 변경하려면 아래 '1234' 부분을 원하시는 암호로 수정하세요!
         if (adminPassword === '3500') { 
           setIsAdmin(true); setShowAdminModal(false); setAdminPassword(''); setLoginError(false);
         } else {
@@ -309,9 +310,10 @@ const firebaseConfig = {
                 </div>
                 <p className="text-sm text-slate-500 mb-4">일정 수정 및 전체 안건 관리를 위해<br/>비밀번호를 입력해주세요.</p>
                 <form onSubmit={handleAdminLoginSubmit}>
+                  {/* 🌟 화면에 보이는 초기값 안내 문구도 필요시 여기서 수정하세요! */}
                   <input 
                     type="password" 
-                    placeholder="비밀번호 입력 (초기값: 3500)"
+                    placeholder="비밀번호 입력 (열려라 참깨)"
                     className={`w-full px-3 py-2.5 text-sm sm:text-base border rounded-lg focus:outline-none focus:ring-2 mb-2 transition-colors ${loginError ? 'border-red-300 focus:ring-red-200' : 'border-slate-300 focus:ring-indigo-200'}`}
                     value={adminPassword}
                     onChange={(e) => { setAdminPassword(e.target.value); setLoginError(false); }}
@@ -454,9 +456,10 @@ const firebaseConfig = {
               </div>
             </header>
 
+            {/* 🌟 데스크탑에서 좌측(일정/등록) 영역과 우측(목록) 영역이 1:1 비율로 배치됩니다. 🌟 */}
             <main className="flex-1 lg:overflow-hidden overflow-y-auto p-4 sm:p-6 flex flex-col lg:flex-row gap-4 sm:gap-6">
               
-              <div className="w-full lg:w-[40%] flex flex-col gap-4 sm:gap-5 flex-shrink-0 lg:overflow-y-auto lg:pr-2 pb-2">
+              <div className="w-full lg:flex-1 flex flex-col gap-4 sm:gap-5 lg:overflow-y-auto lg:pr-2 pb-2">
                 
                 <section className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl sm:rounded-2xl shadow-md p-3.5 sm:p-4 text-white flex-shrink-0 relative group">
                   {isEditingSchedule && isAdmin ? (
@@ -580,7 +583,7 @@ const firebaseConfig = {
                 </section>
               </div>
 
-              <section className="w-full lg:w-[60%] bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col flex-shrink-0 lg:h-full lg:overflow-hidden">
+              <section className="w-full lg:flex-1 bg-white rounded-xl sm:rounded-2xl shadow-sm border border-slate-200 flex flex-col lg:h-full lg:overflow-hidden">
                 <div className="p-2.5 sm:p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50 flex-shrink-0">
                   <div className="flex items-center gap-1.5 sm:gap-2">
                     <List className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-500" />
