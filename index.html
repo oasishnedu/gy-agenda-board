@@ -25,6 +25,14 @@
     /* 고정 픽셀(px)로 설정된 아주 작은 텍스트들만 비례하게 보정합니다. */
     .text-\[10px\] { font-size: 12px !important; }
     .text-\[8px\] { font-size: 9.6px !important; }
+
+    /* 웹에디터 placeholder(안내문구) 스타일 */
+    [contenteditable]:empty:before {
+      content: attr(placeholder);
+      color: #94a3b8;
+      pointer-events: none;
+      display: block;
+    }
   </style>
 </head>
 <body class="bg-slate-200">
@@ -97,6 +105,67 @@
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
     );
+
+    // --- 🌟 신규: 웹 에디터(Rich Text) 컴포넌트 ---
+    const RichEditor = ({ initialValue, onHTMLChange }) => {
+      const editorRef = React.useRef(null);
+      const [isMounted, setIsMounted] = useState(false);
+
+      useEffect(() => {
+        if (editorRef.current && !isMounted) {
+          editorRef.current.innerHTML = initialValue || '';
+          setIsMounted(true);
+        }
+      }, [initialValue, isMounted]);
+
+      const execCmd = (cmd, val = null) => {
+        editorRef.current.focus();
+        document.execCommand(cmd, false, val);
+        onHTMLChange(editorRef.current.innerHTML);
+      };
+
+      const insertSymbol = (symbol) => {
+        editorRef.current.focus();
+        document.execCommand('insertText', false, symbol);
+        onHTMLChange(editorRef.current.innerHTML);
+      };
+
+      const handleInput = () => {
+        onHTMLChange(editorRef.current.innerHTML);
+      };
+
+      const colors = ['#0f172a', '#ef4444', '#f97316', '#eab308', '#22c55e', '#3b82f6', '#a855f7'];
+      const symbols = ['★', '☆', '♥', '♡', '💡', '📌', '✓', '➔', '📝', '※', '■', '□', '●', '○', '▶', '▷'];
+
+      return (
+        <div className="flex flex-col border-t border-indigo-100 bg-white">
+          <div className="flex flex-wrap items-center gap-1 sm:gap-2 p-1.5 sm:p-2 bg-slate-50 border-b border-slate-200 rounded-t-sm">
+            <button type="button" onClick={() => execCmd('bold')} className="w-7 h-7 sm:w-8 sm:h-8 flex justify-center items-center rounded hover:bg-slate-200 font-bold text-slate-700" title="굵게">B</button>
+            <button type="button" onClick={() => execCmd('italic')} className="w-7 h-7 sm:w-8 sm:h-8 flex justify-center items-center rounded hover:bg-slate-200 italic font-serif text-slate-700" title="기울임">I</button>
+            <button type="button" onClick={() => execCmd('underline')} className="w-7 h-7 sm:w-8 sm:h-8 flex justify-center items-center rounded hover:bg-slate-200 underline text-slate-700" title="밑줄">U</button>
+            <div className="w-px h-5 bg-slate-300 mx-1"></div>
+            <div className="flex gap-1.5">
+              {colors.map(c => (
+                <button key={c} type="button" onClick={() => execCmd('foreColor', c)} className="w-5 h-5 sm:w-6 sm:h-6 rounded-full border border-slate-300 hover:scale-110 transition-transform shadow-sm" style={{backgroundColor: c}} title="글자색 변경"></button>
+              ))}
+            </div>
+            <div className="w-px h-5 bg-slate-300 mx-1"></div>
+            <select onChange={(e) => { if(e.target.value) insertSymbol(e.target.value); e.target.value=''; }} className="p-1 text-xs sm:text-sm border border-slate-300 rounded focus:outline-none bg-white text-slate-700 cursor-pointer shadow-sm">
+              <option value="">특수기호</option>
+              {symbols.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
+          </div>
+          <div
+            ref={editorRef}
+            contentEditable
+            onInput={handleInput}
+            onBlur={handleInput}
+            className="p-3 min-h-[150px] outline-none text-sm sm:text-base leading-relaxed"
+            placeholder="여기에 다모임 내용을 자유롭게 작성하세요..."
+          />
+        </div>
+      );
+    };
 
     // --- 메인 앱 컴포넌트 ---
     function App() {
@@ -237,14 +306,25 @@
       };
 
       const handleOpenPastNotes = () => {
-        setEditPastNotesForm([...pastNotes]);
+        // 기존 텍스트 데이터를 새 양식(제목/내용 분리, HTML 지원)으로 자동 변환하여 엽니다.
+        const formState = pastNotes.map(n => {
+          if (n.title !== undefined) return { ...n }; 
+          const lines = n.content.trim().split('\n');
+          return {
+            id: n.id,
+            title: lines[0] || '',
+            content: lines.slice(1).join('<br/>').trim(),
+            isHtml: true
+          };
+        });
+        setEditPastNotesForm(formState);
         setIsEditingPastNotes(false);
         setShowPastNotesModal(true);
         if (pastNotes.length > 0) setExpandedNoteId(pastNotes[0].id);
       };
 
-      const handleAddPastNote = () => setEditPastNotesForm([{ id: Date.now().toString(), content: '' }, ...editPastNotesForm]);
-      const handleEditPastNoteChange = (id, newContent) => setEditPastNotesForm(editPastNotesForm.map(n => n.id === id ? { ...n, content: newContent } : n));
+      const handleAddPastNote = () => setEditPastNotesForm([{ id: Date.now().toString(), title: '', content: '', isHtml: true }, ...editPastNotesForm]);
+      const handleEditPastNoteChange = (id, field, newValue) => setEditPastNotesForm(editPastNotesForm.map(n => n.id === id ? { ...n, [field]: newValue } : n));
       const handleDeletePastNote = (id) => setEditPastNotesForm(editPastNotesForm.filter(n => n.id !== id));
 
       // 🌟 신규 기능: 현재 등록된 안건들을 바탕으로 회의록 초안 자동 생성
@@ -254,20 +334,22 @@
           ? `${dateObj.getFullYear().toString().slice(2)}.${String(dateObj.getMonth() + 1).padStart(2, '0')}.${String(dateObj.getDate()).padStart(2, '0')}`
           : '';
         
-        let draft = `${schedule.title} 결과 공유 (${dateStr})\n\n[논의 안건]\n`;
+        let draftTitle = `${schedule.title} 결과 공유 (${dateStr})`;
+        let draftContent = `<span style="color: #3b82f6;"><strong>[논의 안건]</strong></span><br/><br/>`;
         agendas.forEach((a, i) => {
-          draft += `${i + 1}. ${a.title} (제안: ${a.author})\n`;
+          draftContent += `<strong>${i + 1}. ${a.title}</strong> (제안: ${a.author})<br/>`;
           if (a.description) {
-            draft += `  - 제안 내용: ${a.description}\n`;
+            draftContent += `<span style="color: #64748b;">  - 제안 내용: ${a.description}</span><br/>`;
           }
-          draft += `  - 논의 결과: \n\n`;
+          draftContent += `  - <strong>논의 결과:</strong> <br/><br/>`;
         });
         
-        setEditPastNotesForm([{ id: Date.now().toString(), content: draft.trim() }, ...editPastNotesForm]);
+        setEditPastNotesForm([{ id: Date.now().toString(), title: draftTitle, content: draftContent, isHtml: true }, ...editPastNotesForm]);
       };
 
       const handleSavePastNotes = async () => {
-        const validNotes = editPastNotesForm.filter(n => n.content.trim() !== '');
+        // 제목이나 내용 중 하나라도 있는 항목만 저장
+        const validNotes = editPastNotesForm.filter(n => (n.title && n.title.trim() !== '') || (n.content && n.content.trim() !== ''));
         if (db) {
           await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pastNotes', 'all'), { notes: validNotes });
         } else {
@@ -377,20 +459,27 @@
                   {isEditingPastNotes ? (
                     <div className="flex flex-col gap-3">
                       {editPastNotesForm.map((note) => (
-                        <div key={note.id} className="relative group bg-white rounded-md border border-indigo-200 overflow-hidden shadow-sm">
-                          <textarea
-                            className="w-full min-h-[120px] p-3 pr-10 bg-transparent focus:outline-none text-sm sm:text-base resize-none"
-                            value={note.content}
-                            onChange={(e) => handleEditPastNoteChange(note.id, e.target.value)}
-                            placeholder="첫 줄에 제목을 입력하세요. (엔터 후 내용 작성)"
+                        <div key={note.id} className="relative group bg-white rounded-md border border-indigo-200 overflow-hidden shadow-sm flex flex-col">
+                          <div className="flex items-center">
+                            <input
+                              className="w-full p-3 pr-10 font-bold text-slate-800 text-sm sm:text-base focus:outline-none bg-transparent"
+                              value={note.title || ''}
+                              onChange={(e) => handleEditPastNoteChange(note.id, 'title', e.target.value)}
+                              placeholder="회의록 제목을 입력하세요."
+                            />
+                            <button
+                              onClick={() => handleDeletePastNote(note.id)}
+                              className="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors z-10"
+                              title="이 회의록 삭제"
+                            >
+                              <Trash2 className="w-4 h-4" />
+                            </button>
+                          </div>
+                          
+                          <RichEditor 
+                            initialValue={note.content} 
+                            onHTMLChange={(html) => handleEditPastNoteChange(note.id, 'content', html)} 
                           />
-                          <button
-                            onClick={() => handleDeletePastNote(note.id)}
-                            className="absolute top-2 right-2 p-1.5 text-slate-300 hover:text-red-500 hover:bg-red-50 rounded-md transition-colors"
-                            title="이 회의록 삭제"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
                         </div>
                       ))}
                       
@@ -421,9 +510,18 @@
                         <p className="text-center text-slate-400 py-10 text-sm sm:text-base">등록된 지난 다모임 내용이 없습니다.</p>
                       ) : (
                         pastNotes.map(note => {
-                          const lines = note.content.trim().split('\n');
-                          const title = lines[0] || '(제목 없음)';
-                          const body = lines.slice(1).join('\n').trim();
+                          // 구버전(단순 텍스트)과 신버전(제목/내용 분리, HTML) 데이터 호환 처리
+                          let displayTitle = note.title;
+                          let displayBody = note.content;
+                          let useHtml = note.isHtml;
+
+                          if (displayTitle === undefined) {
+                            const lines = note.content.trim().split('\n');
+                            displayTitle = lines[0] || '(제목 없음)';
+                            displayBody = lines.slice(1).join('\n').trim();
+                            useHtml = false;
+                          }
+
                           const isExpanded = expandedNoteId === note.id;
 
                           return (
@@ -432,12 +530,16 @@
                                 onClick={() => setExpandedNoteId(isExpanded ? null : note.id)}
                                 className="w-full text-left px-4 py-3.5 hover:bg-slate-50 flex justify-between items-center transition-colors focus:outline-none"
                               >
-                                <span className="font-bold text-slate-800 text-sm sm:text-base truncate pr-4">{title}</span>
+                                <span className="font-bold text-slate-800 text-sm sm:text-base truncate pr-4">{displayTitle}</span>
                                 <ChevronDown className={`w-5 h-5 text-slate-400 flex-shrink-0 transform transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} />
                               </button>
-                              {isExpanded && body && (
-                                <div className="px-4 py-3.5 border-t border-slate-100 text-sm sm:text-base text-slate-600 whitespace-pre-wrap leading-relaxed bg-slate-50/50">
-                                  {body}
+                              {isExpanded && displayBody && (
+                                <div className="px-4 py-3.5 border-t border-slate-100 text-sm sm:text-base text-slate-600 bg-slate-50/50">
+                                  {useHtml ? (
+                                    <div dangerouslySetInnerHTML={{ __html: displayBody }} className="leading-relaxed" />
+                                  ) : (
+                                    <div className="whitespace-pre-wrap leading-relaxed">{displayBody}</div>
+                                  )}
                                 </div>
                               )}
                             </div>
