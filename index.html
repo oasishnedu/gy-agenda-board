@@ -14,8 +14,9 @@
     <!-- Babel (JSX 변환용) -->
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 
-    <!-- Lucide 아이콘 -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Firebase v9 Compat (가장 안정적인 기본 연동 방식) -->
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
 </head>
 <body class="bg-gray-100">
     <div id="root">
@@ -24,270 +25,260 @@
         </div>
     </div>
 
-    <!-- Firebase v9 (Firestore용 모듈 방식) -->
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-app.js";
-        import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore.js";
-
+    <!-- type="text/babel"을 사용하여 브라우저가 바로 코드를 해석하도록 수정 -->
+    <script type="text/babel" data-presets="react">
         // =========================================================================
-        // 🌟 선생님, 여기를 꼭 수정해 주세요! (기존 index.html에서 복사)
+        // 🌟 선생님의 파이어베이스 설정
         // =========================================================================
-       const firebaseConfig = {
-  apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
-  authDomain: "gy-agenda-board.firebaseapp.com",
-  projectId: "gy-agenda-board",
-  storageBucket: "gy-agenda-board.firebasestorage.app",
-  messagingSenderId: "636849502282",
-  appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
-};
-        // =========================================================================
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
+            authDomain: "gy-agenda-board.firebaseapp.com",
+            projectId: "gy-agenda-board",
+            storageBucket: "gy-agenda-board.firebasestorage.app",
+            messagingSenderId: "636849502282",
+            appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
+        };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // 파이어베이스 초기화
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
 
-        // React 전역 변수 설정
-        window.React = React;
-        window.useState = React.useState;
-        window.useEffect = React.useEffect;
-        window.db = db;
-        window.collection = collection;
-        window.onSnapshot = onSnapshot;
-        window.doc = doc;
-        window.setDoc = setDoc;
-        window.deleteDoc = deleteDoc;
-        
-        // Lucide 아이콘 전역 설정
-        window.icons = lucide;
+        const { useState, useEffect } = React;
 
-        // 메인 React 렌더링 스크립트 실행
-        const script = document.createElement('script');
-        script.type = 'text/babel';
-        script.text = `
-            const { useState, useEffect, db, collection, onSnapshot, doc, setDoc, deleteDoc } = window;
-            const { Calendar, PlusCircle, List, User, Clock, MessageSquare, Edit2, Save, X, Trash2, Lock } = window.icons;
+        // 🌟 오류를 방지하기 위해 아이콘을 직접 내장
+        const Calendar = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect><line x1="16" y1="2" x2="16" y2="6"></line><line x1="8" y1="2" x2="8" y2="6"></line><line x1="3" y1="10" x2="21" y2="10"></line></svg>;
+        const PlusCircle = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="16"></line><line x1="8" y1="12" x2="16" y2="12"></line></svg>;
+        const List = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>;
+        const User = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>;
+        const Clock = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg>;
+        const MessageSquare = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>;
+        const Edit2 = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path></svg>;
+        const Save = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"></path><polyline points="17 21 17 13 7 13 7 21"></polyline><polyline points="7 3 7 8 15 8"></polyline></svg>;
+        const X = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>;
+        const Trash2 = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>;
+        const Lock = ({ className }) => <svg className={className} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>;
 
-            function App() {
-                const [agendas, setAgendas] = useState([]);
-                const [newAgenda, setNewAgenda] = useState({ title: '', description: '', author: '' });
-                const [schedule, setSchedule] = useState({ title: '3월 구영초 교직원 다모임', date: '2026-03-26T15:00', location: '우다다책숲 도서관' });
-                const [isEditingSchedule, setIsEditingSchedule] = useState(false);
-                const [editScheduleForm, setEditScheduleForm] = useState(schedule);
-                const [editingAgendaId, setEditingAgendaId] = useState(null);
-                const [editAgendaForm, setEditAgendaForm] = useState({ title: '', description: '', author: '' });
-                const [currentTime, setCurrentTime] = useState(new Date());
+        function App() {
+            const [agendas, setAgendas] = useState([]);
+            const [newAgenda, setNewAgenda] = useState({ title: '', description: '', author: '' });
+            const [schedule, setSchedule] = useState({ title: '3월 구영초 교직원 다모임', date: '2026-03-26T15:00', location: '우다다책숲 도서관' });
+            const [isEditingSchedule, setIsEditingSchedule] = useState(false);
+            const [editScheduleForm, setEditScheduleForm] = useState(schedule);
+            const [editingAgendaId, setEditingAgendaId] = useState(null);
+            const [editAgendaForm, setEditAgendaForm] = useState({ title: '', description: '', author: '' });
+            const [currentTime, setCurrentTime] = useState(new Date());
 
-                // 1. Firestore에서 데이터 실시간 불러오기
-                useEffect(() => {
-                    const unsubscribe = onSnapshot(collection(db, 'agendas'), (snapshot) => {
-                        const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
-                        // 최신 글이 위로 오도록 정렬 (id를 숫자 타입 timestamp로 가정)
-                        data.sort((a, b) => Number(b.id) - Number(a.id));
-                        setAgendas(data);
-                    });
-                    
-                    const scheduleUnsubscribe = onSnapshot(collection(db, 'schedule'), (snapshot) => {
-                        if (!snapshot.empty) {
-                            // 'current'라는 문서 ID를 사용한다고 가정
-                            const currentSchedule = snapshot.docs.find(d => d.id === 'current');
-                            if(currentSchedule) setSchedule(currentSchedule.data());
-                        }
-                    });
-
-                    return () => {
-                        unsubscribe();
-                        scheduleUnsubscribe();
-                    };
-                }, []);
-
-                // 현재 시간에 따른 등록 마감 여부 계산
-                useEffect(() => {
-                    const timer = setInterval(() => setCurrentTime(new Date()), 60000);
-                    return () => clearInterval(timer);
-                }, []);
+            // 1. Firestore에서 데이터 실시간 불러오기
+            useEffect(() => {
+                const unsubscribe = db.collection('agendas').onSnapshot((snapshot) => {
+                    const data = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                    // 최신 글이 위로 오도록 정렬 (id를 숫자 타입 timestamp로 가정)
+                    data.sort((a, b) => Number(b.id) - Number(a.id));
+                    setAgendas(data);
+                });
                 
-                const isRegistrationOpen = schedule.date && currentTime < new Date(schedule.date);
+                const scheduleUnsubscribe = db.collection('schedule').onSnapshot((snapshot) => {
+                    if (!snapshot.empty) {
+                        const currentSchedule = snapshot.docs.find(d => d.id === 'current');
+                        if(currentSchedule) setSchedule(currentSchedule.data());
+                    }
+                });
 
-                // 날짜 포맷팅 및 D-Day (기존 로직 유지)
-                const formatDateTime = (dateStr) => {
-                    if (!dateStr) return '';
-                    const d = new Date(dateStr);
-                    if (isNaN(d.getTime())) return dateStr;
-                    const year = d.getFullYear(), month = d.getMonth() + 1, day = d.getDate();
-                    const week = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
-                    let hours = d.getHours();
-                    const minutes = String(d.getMinutes()).padStart(2, '0');
-                    const ampm = hours >= 12 ? '오후' : '오전';
-                    hours = hours % 12 || 12;
-                    return \`\${year}년 \${month}월 \${day}일 (\${week}) \${ampm} \${hours}:\${minutes}\`;
+                return () => {
+                    unsubscribe();
+                    scheduleUnsubscribe();
                 };
+            }, []);
 
-                const getDDay = (dateStr) => {
-                    if (!dateStr) return null;
-                    const targetDate = new Date(dateStr);
-                    if (isNaN(targetDate.getTime())) return null;
-                    const today = new Date();
-                    targetDate.setHours(0, 0, 0, 0); today.setHours(0, 0, 0, 0); 
-                    const diff = Math.round((targetDate - today) / (1000 * 60 * 60 * 24));
-                    if (diff === 0) return 'D-Day';
-                    if (diff > 0) return \`D-\${diff}\`;
-                    return \`D+\${Math.abs(diff)}\`;
-                };
-                const dDayString = getDDay(schedule.date);
+            // 현재 시간에 따른 등록 마감 여부 계산
+            useEffect(() => {
+                const timer = setInterval(() => setCurrentTime(new Date()), 60000);
+                return () => clearInterval(timer);
+            }, []);
+            
+            const isRegistrationOpen = schedule.date && currentTime < new Date(schedule.date);
 
-                // 핸들러 함수들 (Firestore 저장 로직 추가)
-                const handleEditScheduleClick = () => { setEditScheduleForm(schedule); setIsEditingSchedule(true); };
-                const handleCancelScheduleClick = () => setIsEditingSchedule(false);
-                const handleSaveScheduleClick = async () => {
-                    await setDoc(doc(db, 'schedule', 'current'), editScheduleForm);
-                    setIsEditingSchedule(false);
-                };
+            // 날짜 포맷팅 및 D-Day
+            const formatDateTime = (dateStr) => {
+                if (!dateStr) return '';
+                const d = new Date(dateStr);
+                if (isNaN(d.getTime())) return dateStr;
+                const year = d.getFullYear(), month = d.getMonth() + 1, day = d.getDate();
+                const week = ['일', '월', '화', '수', '목', '금', '토'][d.getDay()];
+                let hours = d.getHours();
+                const minutes = String(d.getMinutes()).padStart(2, '0');
+                const ampm = hours >= 12 ? '오후' : '오전';
+                hours = hours % 12 || 12;
+                return `${year}년 ${month}월 ${day}일 (${week}) ${ampm} ${hours}:${minutes}`;
+            };
 
-                const handleSubmit = async (e) => {
-                    e.preventDefault();
-                    if (!newAgenda.title.trim() || !newAgenda.author.trim()) return;
-                    const newId = Date.now().toString();
-                    await setDoc(doc(db, 'agendas', newId), {
-                        ...newAgenda,
-                        date: new Date().toLocaleDateString('ko-KR')
-                    });
-                    setNewAgenda({ title: '', description: '', author: '' });
-                };
+            const getDDay = (dateStr) => {
+                if (!dateStr) return null;
+                const targetDate = new Date(dateStr);
+                if (isNaN(targetDate.getTime())) return null;
+                const today = new Date();
+                targetDate.setHours(0, 0, 0, 0); today.setHours(0, 0, 0, 0); 
+                const diff = Math.round((targetDate - today) / (1000 * 60 * 60 * 24));
+                if (diff === 0) return 'D-Day';
+                if (diff > 0) return `D-${diff}`;
+                return `D+${Math.abs(diff)}`;
+            };
+            const dDayString = getDDay(schedule.date);
 
-                const handleEditAgendaClick = (agenda) => { setEditingAgendaId(agenda.id); setEditAgendaForm(agenda); };
-                const handleCancelAgendaEdit = () => setEditingAgendaId(null);
-                const handleSaveAgendaEdit = async () => {
-                    if (!editAgendaForm.title.trim() || !editAgendaForm.author.trim()) return;
-                    await setDoc(doc(db, 'agendas', editingAgendaId), editAgendaForm);
-                    setEditingAgendaId(null);
-                };
-                const handleDeleteAgenda = async (id) => {
-                    await deleteDoc(doc(db, 'agendas', id));
-                };
+            // 핸들러 함수들
+            const handleEditScheduleClick = () => { setEditScheduleForm(schedule); setIsEditingSchedule(true); };
+            const handleCancelScheduleClick = () => setIsEditingSchedule(false);
+            const handleSaveScheduleClick = async () => {
+                await db.collection('schedule').doc('current').set(editScheduleForm);
+                setIsEditingSchedule(false);
+            };
 
-                // 4월 디자인 그대로 복구
-                return (
-                    <div className="min-h-screen w-full bg-slate-200 flex justify-center items-center p-4 font-sans">
-                        <div className="w-[33.33vw] min-w-[360px] max-w-[500px] h-[90vh] flex flex-col bg-slate-50 text-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-300">
-                            <header className="bg-white shadow-sm px-4 py-3 flex-shrink-0 z-10 border-b border-slate-100">
-                                <div className="flex items-center justify-between">
-                                    <h1 className="text-lg font-bold text-indigo-600 flex items-center gap-1.5">
-                                        <MessageSquare className="w-5 h-5" /> 구영초 교직원다모임
-                                    </h1>
-                                    <div className="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full">협업 보드</div>
+            const handleSubmit = async (e) => {
+                e.preventDefault();
+                if (!newAgenda.title.trim() || !newAgenda.author.trim()) return;
+                const newId = Date.now().toString();
+                await db.collection('agendas').doc(newId).set({
+                    ...newAgenda,
+                    date: new Date().toLocaleDateString('ko-KR')
+                });
+                setNewAgenda({ title: '', description: '', author: '' });
+            };
+
+            const handleEditAgendaClick = (agenda) => { setEditingAgendaId(agenda.id); setEditAgendaForm(agenda); };
+            const handleCancelAgendaEdit = () => setEditingAgendaId(null);
+            const handleSaveAgendaEdit = async () => {
+                if (!editAgendaForm.title.trim() || !editAgendaForm.author.trim()) return;
+                await db.collection('agendas').doc(editingAgendaId).set(editAgendaForm);
+                setEditingAgendaId(null);
+            };
+            const handleDeleteAgenda = async (id) => {
+                await db.collection('agendas').doc(id).delete();
+            };
+
+            // 4월 디자인 그대로 렌더링
+            return (
+                <div className="min-h-screen w-full bg-slate-200 flex justify-center items-center p-4 font-sans">
+                    <div className="w-[33.33vw] min-w-[360px] max-w-[500px] h-[90vh] flex flex-col bg-slate-50 text-slate-800 rounded-2xl shadow-2xl overflow-hidden border border-slate-300">
+                        <header className="bg-white shadow-sm px-4 py-3 flex-shrink-0 z-10 border-b border-slate-100">
+                            <div className="flex items-center justify-between">
+                                <h1 className="text-lg font-bold text-indigo-600 flex items-center gap-1.5">
+                                    <MessageSquare className="w-5 h-5" /> 구영초 교직원다모임
+                                </h1>
+                                <div className="text-[10px] text-slate-400 bg-slate-100 px-2 py-1 rounded-full">협업 보드</div>
+                            </div>
+                        </header>
+
+                        <main className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
+                            <section className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-md p-4 text-white flex-shrink-0 relative group">
+                                {isEditingSchedule ? (
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex items-center justify-between border-b border-indigo-400 pb-2 mb-1">
+                                            <h2 className="text-base font-bold flex items-center gap-1.5"><Calendar className="w-4 h-4" /> 일정 수정</h2>
+                                            <div className="flex gap-1.5">
+                                                <button onClick={handleCancelScheduleClick} className="p-1 bg-white/20 hover:bg-white/30 rounded-md transition-colors" title="취소"><X className="w-4 h-4 text-white" /></button>
+                                                <button onClick={handleSaveScheduleClick} className="flex items-center gap-1 px-2.5 py-1.5 bg-white text-indigo-600 font-bold rounded-md hover:bg-indigo-50 transition-colors text-xs" title="저장"><Save className="w-3 h-3" /> 저장</button>
+                                            </div>
+                                        </div>
+                                        <div className="flex flex-col gap-2">
+                                            <div><label className="block text-indigo-100 text-xs mb-1">일시</label><input type="datetime-local" value={editScheduleForm.date} onChange={(e) => setEditScheduleForm({...editScheduleForm, date: e.target.value})} className="w-full px-2.5 py-1.5 text-sm bg-white text-slate-800 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-300" /></div>
+                                            <div><label className="block text-indigo-100 text-xs mb-1">장소</label><input type="text" value={editScheduleForm.location} onChange={(e) => setEditScheduleForm({...editScheduleForm, location: e.target.value})} className="w-full px-2.5 py-1.5 text-sm bg-white text-slate-800 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-300" /></div>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="flex flex-col gap-3">
+                                        <div className="flex justify-between items-start">
+                                            <div className="flex items-center gap-2">
+                                                <div className="bg-white/20 p-2 rounded-full flex-shrink-0"><Calendar className="w-5 h-5 text-white" /></div>
+                                                <h2 className="text-xs font-medium text-indigo-100 uppercase tracking-wider">다음 교직원다모임 일정</h2>
+                                            </div>
+                                            <button onClick={handleEditScheduleClick} className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] bg-white/20 hover:bg-white/30 px-2 py-1 rounded text-white cursor-pointer"><Edit2 className="w-3 h-3" /> 수정</button>
+                                        </div>
+                                        <div>
+                                            <div className="flex flex-col gap-2 mt-2">
+                                                <div className="flex items-start sm:items-center gap-1.5 text-sm sm:text-base font-bold">
+                                                    <Clock className="w-4 h-4 flex-shrink-0 text-indigo-200 mt-0.5 sm:mt-0" />
+                                                    <span className="break-keep leading-tight">{formatDateTime(schedule.date)}</span>
+                                                    {dDayString && <span className="ml-0.5 bg-pink-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm flex-shrink-0 whitespace-nowrap">{dDayString}</span>}
+                                                </div>
+                                                <div className="flex items-start gap-1.5 text-indigo-100 text-sm"><User className="w-4 h-4 flex-shrink-0 mt-0.5" /><span className="break-keep leading-tight">{schedule.location}</span></div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+                            </section>
+
+                            <section className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-shrink-0 relative overflow-hidden">
+                                <div className="p-3 border-b border-slate-100 flex items-center justify-between">
+                                    <div className="flex items-center gap-2"><PlusCircle className="w-4 h-4 text-indigo-500" /><h2 className="text-sm font-bold">새 안건 등록</h2></div>
+                                    {!isRegistrationOpen && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Lock className="w-3 h-3" /> 마감됨</span>}
                                 </div>
-                            </header>
+                                {isRegistrationOpen ? (
+                                    <form onSubmit={handleSubmit} className="p-3 flex flex-col gap-2.5">
+                                        <input type="text" placeholder="등록자(부서명) *" className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" value={newAgenda.author} onChange={(e) => setNewAgenda({...newAgenda, author: e.target.value})} required />
+                                        <input type="text" placeholder="안건 제목 *" className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" value={newAgenda.title} onChange={(e) => setNewAgenda({...newAgenda, title: e.target.value})} required />
+                                        <textarea placeholder="상세 내용 (선택)" className="w-full min-h-[70px] px-3 py-2 text-sm rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" value={newAgenda.description} onChange={(e) => setNewAgenda({...newAgenda, description: e.target.value})}></textarea>
+                                        <button type="submit" className="w-full mt-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-sm"><PlusCircle className="w-4 h-4" /> 추가하기</button>
+                                    </form>
+                                ) : (
+                                    <div className="p-6 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
+                                        <Lock className="w-8 h-8 mb-2 opacity-30" />
+                                        <p className="text-sm font-medium text-slate-600">안건 등록이 마감되었습니다.</p>
+                                        <p className="text-xs mt-1 text-center">다음 일정이 새로 설정되면<br/>다시 오픈됩니다.</p>
+                                    </div>
+                                )}
+                            </section>
 
-                            <main className="flex-1 overflow-y-auto p-4 flex flex-col gap-4">
-                                <section className="bg-gradient-to-r from-indigo-500 to-purple-600 rounded-xl shadow-md p-4 text-white flex-shrink-0 relative group">
-                                    {isEditingSchedule ? (
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex items-center justify-between border-b border-indigo-400 pb-2 mb-1">
-                                                <h2 className="text-base font-bold flex items-center gap-1.5"><Calendar className="w-4 h-4" /> 일정 수정</h2>
-                                                <div className="flex gap-1.5">
-                                                    <button onClick={handleCancelScheduleClick} className="p-1 bg-white/20 hover:bg-white/30 rounded-md transition-colors" title="취소"><X className="w-4 h-4 text-white" /></button>
-                                                    <button onClick={handleSaveScheduleClick} className="flex items-center gap-1 px-2.5 py-1.5 bg-white text-indigo-600 font-bold rounded-md hover:bg-indigo-50 transition-colors text-xs" title="저장"><Save className="w-3 h-3" /> 저장</button>
-                                                </div>
-                                            </div>
-                                            <div className="flex flex-col gap-2">
-                                                <div><label className="block text-indigo-100 text-xs mb-1">일시</label><input type="datetime-local" value={editScheduleForm.date} onChange={(e) => setEditScheduleForm({...editScheduleForm, date: e.target.value})} className="w-full px-2.5 py-1.5 text-sm bg-white text-slate-800 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-300" /></div>
-                                                <div><label className="block text-indigo-100 text-xs mb-1">장소</label><input type="text" value={editScheduleForm.location} onChange={(e) => setEditScheduleForm({...editScheduleForm, location: e.target.value})} className="w-full px-2.5 py-1.5 text-sm bg-white text-slate-800 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-300" /></div>
-                                            </div>
-                                        </div>
+                            <section className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-shrink-0 pb-2">
+                                <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                                    <div className="flex items-center gap-2"><List className="w-4 h-4 text-indigo-500" /><h2 className="text-sm font-bold">등록된 안건 목록</h2></div>
+                                    <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">총 {agendas.length}건</span>
+                                </div>
+                                <div className="p-3 flex flex-col gap-3">
+                                    {agendas.length === 0 ? (
+                                        <div className="py-6 flex flex-col items-center justify-center text-slate-400 gap-2"><MessageSquare className="w-8 h-8 opacity-20" /><p className="text-xs text-center">아직 등록된 안건이 없습니다.<br/>첫 번째 안건을 등록해 보세요!</p></div>
                                     ) : (
-                                        <div className="flex flex-col gap-3">
-                                            <div className="flex justify-between items-start">
-                                                <div className="flex items-center gap-2">
-                                                    <div className="bg-white/20 p-2 rounded-full flex-shrink-0"><Calendar className="w-5 h-5 text-white" /></div>
-                                                    <h2 className="text-xs font-medium text-indigo-100 uppercase tracking-wider">다음 교직원다모임 일정</h2>
+                                        agendas.map((agenda) => (
+                                            editingAgendaId === agenda.id ? (
+                                                <div key={`edit-${agenda.id}`} className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-200 flex flex-col gap-2">
+                                                    <div className="flex items-center justify-between mb-1"><h3 className="text-xs font-bold text-indigo-700 flex items-center gap-1"><Edit2 className="w-3 h-3"/> 안건 수정 중</h3><button onClick={handleCancelAgendaEdit} className="p-1 text-slate-500 hover:bg-slate-200 rounded-md transition-colors"><X className="w-3 h-3" /></button></div>
+                                                    <input type="text" className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.author} onChange={(e) => setEditAgendaForm({...editAgendaForm, author: e.target.value})} placeholder="등록자" />
+                                                    <input type="text" className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.title} onChange={(e) => setEditAgendaForm({...editAgendaForm, title: e.target.value})} placeholder="안건 제목" />
+                                                    <textarea className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-sm resize-none min-h-[60px] focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.description} onChange={(e) => setEditAgendaForm({...editAgendaForm, description: e.target.value})} placeholder="상세 내용"></textarea>
+                                                    <div className="flex justify-end mt-1"><button onClick={handleSaveAgendaEdit} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 transition-colors text-xs"><Save className="w-3 h-3" /> 저장완료</button></div>
                                                 </div>
-                                                <button onClick={handleEditScheduleClick} className="opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 text-[10px] bg-white/20 hover:bg-white/30 px-2 py-1 rounded text-white cursor-pointer"><Edit2 className="w-3 h-3" /> 수정</button>
-                                            </div>
-                                            <div>
-                                                <div className="flex flex-col gap-2 mt-2">
-                                                    <div className="flex items-start sm:items-center gap-1.5 text-sm sm:text-base font-bold">
-                                                        <Clock className="w-4 h-4 flex-shrink-0 text-indigo-200 mt-0.5 sm:mt-0" />
-                                                        <span className="break-keep leading-tight">{formatDateTime(schedule.date)}</span>
-                                                        {dDayString && <span className="ml-0.5 bg-pink-500 text-white text-[10px] font-extrabold px-1.5 py-0.5 rounded-full shadow-sm flex-shrink-0 whitespace-nowrap">{dDayString}</span>}
+                                            ) : (
+                                                <div key={agenda.id} className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow group relative">
+                                                    <div className="flex justify-between items-start mb-1.5 pr-14"><h3 className="text-sm font-bold text-slate-800 leading-tight">{agenda.title}</h3></div>
+                                                    <div className="absolute top-3.5 right-3.5 flex flex-col items-end gap-1">
+                                                        {isRegistrationOpen && (
+                                                            <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 bg-white/80 rounded px-1">
+                                                                <button onClick={() => handleEditAgendaClick(agenda)} className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded" title="수정"><Edit2 className="w-3.5 h-3.5" /></button>
+                                                                <button onClick={() => handleDeleteAgenda(agenda.id)} className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="삭제"><Trash2 className="w-3.5 h-3.5" /></button>
+                                                            </div>
+                                                        )}
+                                                        <span className="text-[10px] font-medium text-slate-400">{agenda.date}</span>
                                                     </div>
-                                                    <div className="flex items-start gap-1.5 text-indigo-100 text-sm"><User className="w-4 h-4 flex-shrink-0 mt-0.5" /><span className="break-keep leading-tight">{schedule.location}</span></div>
+                                                    {agenda.description && <p className="text-slate-600 text-xs mt-2 mb-3 whitespace-pre-wrap leading-relaxed">{agenda.description}</p>}
+                                                    <div className="flex items-center gap-1.5 mt-3 pt-2 border-t border-slate-50">
+                                                        <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600"><User className="w-3 h-3" /></div>
+                                                        <span className="text-xs font-medium text-slate-700">{agenda.author}</span>
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        </div>
+                                            )
+                                        ))
                                     )}
-                                </section>
-
-                                <section className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-shrink-0 relative overflow-hidden">
-                                    <div className="p-3 border-b border-slate-100 flex items-center justify-between">
-                                        <div className="flex items-center gap-2"><PlusCircle className="w-4 h-4 text-indigo-500" /><h2 className="text-sm font-bold">새 안건 등록</h2></div>
-                                        {!isRegistrationOpen && <span className="bg-red-100 text-red-600 text-[10px] font-bold px-2 py-0.5 rounded-full flex items-center gap-1"><Lock className="w-3 h-3" /> 마감됨</span>}
-                                    </div>
-                                    {isRegistrationOpen ? (
-                                        <form onSubmit={handleSubmit} className="p-3 flex flex-col gap-2.5">
-                                            <input type="text" placeholder="등록자(부서명) *" className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" value={newAgenda.author} onChange={(e) => setNewAgenda({...newAgenda, author: e.target.value})} required />
-                                            <input type="text" placeholder="안건 제목 *" className="w-full px-3 py-2 text-sm rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" value={newAgenda.title} onChange={(e) => setNewAgenda({...newAgenda, title: e.target.value})} required />
-                                            <textarea placeholder="상세 내용 (선택)" className="w-full min-h-[70px] px-3 py-2 text-sm rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 resize-none" value={newAgenda.description} onChange={(e) => setNewAgenda({...newAgenda, description: e.target.value})}></textarea>
-                                            <button type="submit" className="w-full mt-1 bg-indigo-600 hover:bg-indigo-700 text-white font-medium py-2 rounded-md transition-colors flex items-center justify-center gap-1.5 text-sm"><PlusCircle className="w-4 h-4" /> 추가하기</button>
-                                        </form>
-                                    ) : (
-                                        <div className="p-6 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50">
-                                            <Lock className="w-8 h-8 mb-2 opacity-30" />
-                                            <p className="text-sm font-medium text-slate-600">안건 등록이 마감되었습니다.</p>
-                                            <p className="text-xs mt-1 text-center">다음 일정이 새로 설정되면<br/>다시 오픈됩니다.</p>
-                                        </div>
-                                    )}
-                                </section>
-
-                                <section className="bg-white rounded-xl shadow-sm border border-slate-200 flex flex-col flex-shrink-0 pb-2">
-                                    <div className="p-3 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-                                        <div className="flex items-center gap-2"><List className="w-4 h-4 text-indigo-500" /><h2 className="text-sm font-bold">등록된 안건 목록</h2></div>
-                                        <span className="bg-indigo-100 text-indigo-700 text-[10px] font-bold px-2 py-0.5 rounded-full">총 {agendas.length}건</span>
-                                    </div>
-                                    <div className="p-3 flex flex-col gap-3">
-                                        {agendas.length === 0 ? (
-                                            <div className="py-6 flex flex-col items-center justify-center text-slate-400 gap-2"><MessageSquare className="w-8 h-8 opacity-20" /><p className="text-xs text-center">아직 등록된 안건이 없습니다.<br/>첫 번째 안건을 등록해 보세요!</p></div>
-                                        ) : (
-                                            agendas.map((agenda) => (
-                                                editingAgendaId === agenda.id ? (
-                                                    <div key={\`edit-\${agenda.id}\`} className="bg-indigo-50/50 p-3 rounded-lg border border-indigo-200 flex flex-col gap-2">
-                                                        <div className="flex items-center justify-between mb-1"><h3 className="text-xs font-bold text-indigo-700 flex items-center gap-1"><Edit2 className="w-3 h-3"/> 안건 수정 중</h3><button onClick={handleCancelAgendaEdit} className="p-1 text-slate-500 hover:bg-slate-200 rounded-md transition-colors"><X className="w-3 h-3" /></button></div>
-                                                        <input type="text" className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.author} onChange={(e) => setEditAgendaForm({...editAgendaForm, author: e.target.value})} placeholder="등록자" />
-                                                        <input type="text" className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.title} onChange={(e) => setEditAgendaForm({...editAgendaForm, title: e.target.value})} placeholder="안건 제목" />
-                                                        <textarea className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-sm resize-none min-h-[60px] focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.description} onChange={(e) => setEditAgendaForm({...editAgendaForm, description: e.target.value})} placeholder="상세 내용"></textarea>
-                                                        <div className="flex justify-end mt-1"><button onClick={handleSaveAgendaEdit} className="flex items-center gap-1 px-3 py-1.5 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 transition-colors text-xs"><Save className="w-3 h-3" /> 저장완료</button></div>
-                                                    </div>
-                                                ) : (
-                                                    <div key={agenda.id} className="bg-white p-3.5 rounded-lg border border-slate-200 shadow-sm hover:shadow-md transition-shadow group relative">
-                                                        <div className="flex justify-between items-start mb-1.5 pr-14"><h3 className="text-sm font-bold text-slate-800 leading-tight">{agenda.title}</h3></div>
-                                                        <div className="absolute top-3.5 right-3.5 flex flex-col items-end gap-1">
-                                                            {isRegistrationOpen && (
-                                                                <div className="opacity-0 group-hover:opacity-100 transition-opacity flex gap-0.5 bg-white/80 rounded px-1">
-                                                                    <button onClick={() => handleEditAgendaClick(agenda)} className="p-1 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded" title="수정"><Edit2 className="w-3.5 h-3.5" /></button>
-                                                                    <button onClick={() => handleDeleteAgenda(agenda.id)} className="p-1 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded" title="삭제"><Trash2 className="w-3.5 h-3.5" /></button>
-                                                                </div>
-                                                            )}
-                                                            <span className="text-[10px] font-medium text-slate-400">{agenda.date}</span>
-                                                        </div>
-                                                        {agenda.description && <p className="text-slate-600 text-xs mt-2 mb-3 whitespace-pre-wrap leading-relaxed">{agenda.description}</p>}
-                                                        <div className="flex items-center gap-1.5 mt-3 pt-2 border-t border-slate-50">
-                                                            <div className="w-5 h-5 rounded-full bg-indigo-100 flex items-center justify-center text-indigo-600"><User className="w-3 h-3" /></div>
-                                                            <span className="text-xs font-medium text-slate-700">{agenda.author}</span>
-                                                        </div>
-                                                    </div>
-                                                )
-                                            ))
-                                        )}
-                                    </div>
-                                </section>
-                            </main>
-                        </div>
+                                </div>
+                            </section>
+                        </main>
                     </div>
-                );
-            }
+                </div>
+            );
+        }
 
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-        `;
-        document.body.appendChild(script);
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(<App />);
     </script>
 </body>
 </html>
