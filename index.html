@@ -1,43 +1,116 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>구영초 교직원다모임</title>
-    <!-- React, ReactDOM, Babel, Tailwind -->
-    <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>구영초 교직원다모임</title>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+<style>
+html { font-size: 120% !important; }
+[contenteditable]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; display: block; }
+</style>
 </head>
 <body class="bg-slate-200">
-    <div id="root"></div>
+<div id="root"></div>
 
-    <script type="text/babel" data-presets="react">
-        // 모듈 import 문을 제거하고 React 전역 객체를 사용하여 오류를 해결합니다.
-        const { useState } = React;
+<script type="text/babel" data-type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, onSnapshot, doc, setDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        function App() {
-            const [title, setTitle] = useState("구영초 교직원다모임");
+const { useState, useEffect, useRef } = React;
 
-            return (
-                <div className="min-h-screen flex flex-col items-center justify-center p-4">
-                    <div className="bg-white p-8 rounded-xl shadow-lg w-full max-w-2xl">
-                        <h1 className="text-3xl font-bold text-indigo-700 mb-4">{title}</h1>
-                        <p className="text-slate-600">환영합니다! 이 페이지는 수정된 설정으로 정상 작동합니다.</p>
-                        <button 
-                            className="mt-6 bg-indigo-600 text-white px-6 py-2 rounded-lg hover:bg-indigo-700 transition"
-                            onClick={() => alert("다모임 보드에 오신 것을 환영합니다!")}
-                        >
-                            시작하기
-                        </button>
+const myFirebaseConfig = {
+    apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
+    authDomain: "gy-agenda-board.firebaseapp.com",
+    projectId: "gy-agenda-board",
+    storageBucket: "gy-agenda-board.firebasestorage.app",
+    messagingSenderId: "636849502282",
+    appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
+};
+
+const app = initializeApp(myFirebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const appId = 'guyoung-agenda-board';
+
+const RichEditor = ({ initialValue, onHTMLChange }) => {
+    const editorRef = useRef(null);
+    useEffect(() => { if (editorRef.current && editorRef.current.innerHTML !== initialValue) editorRef.current.innerHTML = initialValue || ''; }, [initialValue]);
+    const execCmd = (cmd, val = null) => { document.execCommand(cmd, false, val); onHTMLChange(editorRef.current.innerHTML); };
+    return (
+        <div className="flex flex-col border border-indigo-100 bg-white rounded-md overflow-hidden">
+            <div className="flex flex-wrap gap-1 p-2 bg-slate-50 border-b">
+                <button type="button" onClick={() => execCmd('bold')} className="px-2 font-bold">B</button>
+                <button type="button" onClick={() => execCmd('italic')} className="px-2 italic">I</button>
+            </div>
+            <div ref={editorRef} contentEditable onInput={(e) => onHTMLChange(e.currentTarget.innerHTML)} className="p-3 min-h-[100px] outline-none text-sm" />
+        </div>
+    );
+};
+
+function App() {
+    const [user, setUser] = useState(null);
+    const [pastNotes, setPastNotes] = useState([]);
+    const [editPastNotesForm, setEditPastNotesForm] = useState([]);
+    const [showPastNotesModal, setShowPastNotesModal] = useState(false);
+
+    useEffect(() => {
+        signInAnonymously(auth).catch(console.error);
+        const unsubAuth = onAuthStateChanged(auth, setUser);
+        
+        // 파이어베이스 데이터 구독
+        const unsubNotes = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'pastNotes', 'all'), (docSnap) => {
+            if (docSnap.exists()) setPastNotes(docSnap.data().notes || []);
+        });
+
+        return () => { unsubAuth(); unsubNotes(); };
+    }, []);
+
+    const handleAddPastNote = () => setEditPastNotesForm([{ id: Date.now().toString(), title: '', content: '', isHtml: true }, ...editPastNotesForm]);
+    const handleEditPastNoteChange = (id, field, value) => setEditPastNotesForm(editPastNotesForm.map(n => n.id === id ? {...n, [field]: value} : n));
+    const handleDeletePastNote = (id) => setEditPastNotesForm(editPastNotesForm.filter(n => n.id !== id));
+
+    const handleSavePastNotes = async () => {
+        try {
+            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pastNotes', 'all'), { notes: editPastNotesForm });
+            setShowPastNotesModal(false);
+        } catch (e) { console.error("저장 실패", e); }
+    };
+
+    return (
+        <div className="p-4">
+            <h1 className="text-2xl font-bold text-center text-indigo-700 mb-6">구영초 교직원다모임</h1>
+            <div className="flex justify-center">
+                <button onClick={() => { setEditPastNotesForm(pastNotes); setShowPastNotesModal(true); }} className="bg-indigo-600 text-white px-4 py-2 rounded shadow">지난 회의록 보기</button>
+            </div>
+            
+            {showPastNotesModal && (
+                <div className="fixed inset-0 bg-black/50 flex items-center justify-center p-4 z-50">
+                    <div className="bg-white p-6 rounded-lg w-full max-w-lg max-h-[80vh] overflow-y-auto">
+                        <h2 className="text-lg font-bold mb-4">회의록 관리</h2>
+                        {editPastNotesForm.map(note => (
+                            <div key={note.id} className="mb-4 border p-2 rounded">
+                                <input value={note.title} onChange={(e) => handleEditPastNoteChange(note.id, 'title', e.target.value)} placeholder="제목" className="w-full mb-2 border-b p-1" />
+                                <RichEditor initialValue={note.content} onHTMLChange={(html) => handleEditPastNoteChange(note.id, 'content', html)} />
+                                <button onClick={() => handleDeletePastNote(note.id)} className="text-red-500 text-sm mt-2">삭제</button>
+                            </div>
+                        ))}
+                        <button onClick={handleAddPastNote} className="bg-green-500 text-white px-3 py-1 rounded text-sm mb-4">+ 추가</button>
+                        <div className="flex gap-2">
+                            <button onClick={handleSavePastNotes} className="bg-blue-600 text-white px-4 py-2 rounded">저장</button>
+                            <button onClick={() => setShowPastNotesModal(false)} className="bg-slate-300 px-4 py-2 rounded">닫기</button>
+                        </div>
                     </div>
                 </div>
-            );
-        }
-
-        const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(<App />);
-    </script>
+            )}
+        </div>
+    );
+}
+root.render(<App />);
+</script>
 </body>
 </html>
