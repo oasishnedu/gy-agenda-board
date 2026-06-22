@@ -3,47 +3,43 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>GY 아젠다 보드</title>
-    <!-- Tailwind CSS -->
+    <title>구영초 교직원다모임</title>
+    <!-- 외부 CDN 설정: 최적화된 로딩 순서 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    
-    <!-- 라이브러리 로드: 안정적인 경로 사용 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
 </head>
-<body>
-    <div id="root">
-        <div id="status-display" style="padding: 40px; text-align: center; font-family: sans-serif; color: #4b5563;">
-            <h2 id="msg">초기화 시작...</h2>
-        </div>
-    </div>
+<body class="bg-slate-200">
+    <div id="root"></div>
 
-    <script type="text/babel">
-        const msgEl = document.getElementById('msg');
-        
-        try {
-            msgEl.innerText = "데이터 렌더링 중...";
-            
-            // App 컴포넌트 정의
-            const App = () => {
-                return (
-                    <div className="flex items-center justify-center h-screen bg-slate-100">
-                        <div className="p-8 bg-white rounded-2xl shadow-2xl text-center border border-slate-200">
-                            <h1 className="text-3xl font-black text-indigo-600 mb-4">GY 아젠다 보드</h1>
-                            <p className="text-slate-600 font-medium">정상적으로 작동 중입니다.</p>
-                            <p className="text-xs text-slate-400 mt-4">이제 AgendaBoard.jsx의 코드를 여기에 통합할 준비가 되었습니다.</p>
-                        </div>
-                    </div>
-                );
-            };
+    <script>
+        // 코드 실행 안전 가드: React가 로드된 후 실행
+        const { useState, useEffect } = React;
+        const { Calendar, PlusCircle, List, User, Clock, MessageSquare, Edit2, Save, X, Trash2, Lock } = lucide;
 
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-            
-        } catch (err) {
-            msgEl.innerHTML = `<div style="color: red; font-weight: bold; padding: 20px;">오류 발생: ${err.message}</div>`;
+        function App() {
+            const [agendas, setAgendas] = useState([
+                { id: 1, title: '3월 학급 자치활동 운영 예산 지원 건', description: '학년별 예산 배분 및 사용 기준 논의', author: '박교사', date: '2026-06-22' },
+                { id: 2, title: '학생 생활지도 규정 개정', description: '스마트폰 사용 규정 의견 수렴', author: '최부장', date: '2026-06-22' }
+            ]);
+
+            return React.createElement('div', { className: 'min-h-screen w-full bg-slate-200 flex justify-center items-center p-4' },
+                React.createElement('div', { className: 'w-[400px] bg-white rounded-2xl shadow-xl p-6' },
+                    React.createElement('h1', { className: 'text-xl font-bold text-indigo-600 mb-4' }, '구영초 교직원다모임'),
+                    agendas.map(agenda => 
+                        React.createElement('div', { key: agenda.id, className: 'mb-4 p-3 border rounded' },
+                            React.createElement('h2', { className: 'font-bold' }, agenda.title),
+                            React.createElement('p', { className: 'text-sm text-gray-600' }, agenda.description)
+                        )
+                    )
+                )
+            );
         }
+
+        // 렌더링 로직
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
     </script>
 </body>
 </html>
