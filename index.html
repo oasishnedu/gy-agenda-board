@@ -4,49 +4,66 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GY 아젠다 보드</title>
-    <!-- Tailwind CSS -->
+    <!-- Tailwind CSS 로드 보장 -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React 및 의존성 라이브러리 로드 -->
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
-    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
-    <style>
-        #root { width: 100%; height: 100vh; }
-        .error-boundary { padding: 20px; color: red; font-family: monospace; }
-    </style>
 </head>
 <body>
     <div id="root">
-        <div class="error-boundary">로딩 중... 만약 여기서 멈춘다면 설정된 스크립트가 차단된 것입니다.</div>
+        <div style="padding: 20px; color: #4b5563; font-family: sans-serif;">
+            <h2>시스템 초기화 중...</h2>
+            <p id="status">필요한 구성 요소를 불러오고 있습니다.</p>
+        </div>
     </div>
 
-    <script type="text/babel">
-        // 최상위 에러 핸들러
-        window.onerror = function(message, source, lineno, colno, error) {
-            document.getElementById('root').innerHTML = `
-                <div class="error-boundary">
-                    <h2>치명적 오류 발생</h2>
-                    <p>메시지: ${message}</p>
-                    <p>위치: ${source} (${lineno}:${colno})</p>
-                </div>
-            `;
-            return true;
-        };
+    <!-- 스크립트 로드 시 상세 오류 추적 -->
+    <script>
+        const statusEl = document.getElementById('status');
+        const loadScript = (src) => new Promise((resolve, reject) => {
+            const script = document.createElement('script');
+            script.src = src;
+            script.onload = resolve;
+            script.onerror = () => reject(new Error(`스크립트 로드 실패: ${src}`));
+            document.head.appendChild(script);
+        });
 
-        const App = () => {
-            return (
-                <div className="flex items-center justify-center h-full bg-gray-100">
-                    <h1 className="text-2xl font-bold">GY 아젠다 보드가 정상적으로 로드되었습니다.</h1>
-                </div>
-            );
-        };
-
-        try {
-            const root = ReactDOM.createRoot(document.getElementById('root'));
-            root.render(<App />);
-        } catch (e) {
-            document.getElementById('root').innerHTML = `<div class="error-boundary">렌더링 실패: ${e.message}</div>`;
+        async function init() {
+            try {
+                await loadScript("https://unpkg.com/react@18/umd/react.production.min.js");
+                await loadScript("https://unpkg.com/react-dom@18/umd/react-dom.production.min.js");
+                await loadScript("https://unpkg.com/@babel/standalone/babel.min.js");
+                
+                statusEl.innerText = "모든 준비가 완료되었습니다. 앱을 그리는 중...";
+                // React가 로드된 후 메인 로직 실행
+                runApp();
+            } catch (err) {
+                document.getElementById('root').innerHTML = `
+                    <div style="padding: 20px; color: red; border: 1px solid red; margin: 20px;">
+                        <h3>네트워크 차단 오류</h3>
+                        <p>${err.message}</p>
+                        <p>해결책: 현재 환경에서 특정 외부 스크립트(unpkg.com)의 접근이 차단되어 있습니다.</p>
+                    </div>
+                `;
+            }
         }
+
+        function runApp() {
+            const script = document.createElement('script');
+            script.type = 'text/babel';
+            script.text = `
+                const App = () => (
+                    <div className="flex items-center justify-center h-screen bg-gray-100">
+                        <div className="p-6 bg-white rounded-lg shadow-xl">
+                            <h1 className="text-xl font-bold text-indigo-600">GY 아젠다 보드 성공!</h1>
+                        </div>
+                    </div>
+                );
+                const root = ReactDOM.createRoot(document.getElementById('root'));
+                root.render(<App />);
+            `;
+            document.body.appendChild(script);
+        }
+
+        init();
     </script>
 </body>
 </html>
