@@ -17,6 +17,18 @@
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script>
+  // 🌟 중요: Babel의 "react" 프리셋이 기본 설정으로 자동으로 "react/jsx-runtime"을 import하려고 시도하면서
+  // 브라우저에서 그 모듈 경로를 해석하지 못해 화면이 하얗게 나오는 문제를 막기 위한 코드입니다.
+  // "react-classic"이라는 이름으로 옛날 방식(classic, React.createElement)을 강제 고정한 프리셋을 새로 만들어 등록합니다.
+  try {
+    Babel.registerPreset('react-classic', {
+      presets: [[Babel.availablePresets['react'], { runtime: 'classic' }]]
+    });
+  } catch (e) {
+    console.error('react-classic 프리셋 등록 실패. Babel 버전이 예상과 다를 수 있습니다:', e);
+  }
+</script>
 <script src="https://cdn.tailwindcss.com"></script>
 <style>
 /* 전체적인 텍스트 및 UI 크기를 1.2배(120%)로 키웁니다. */
@@ -39,7 +51,7 @@ html { font-size: 120% !important; }
 <div id="root"></div>
 
 <!-- data-type="module" 을 추가하여 실시간 클라우드 모듈을 불러올 수 있게 합니다. -->
-<script type="text/babel" data-type="module">
+<script type="text/babel" data-type="module" data-presets="react-classic,env">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
