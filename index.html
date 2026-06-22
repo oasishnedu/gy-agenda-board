@@ -21,12 +21,12 @@
             messagingSenderId: "636849502282",
             appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
         };
-        firebase.initializeApp(firebaseConfig);
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.firestore();
 
         function App() {
             const [agendas, setAgendas] = React.useState([]);
-            const [schedule, setSchedule] = React.useState({ title: '', date: '', location: '' });
+            const [schedule, setSchedule] = React.useState({ title: '3월 구영초 교직원 다모임', date: '2026-03-26', location: '우다다책숲 도서관' });
             const [newAgenda, setNewAgenda] = React.useState({ title: '', description: '', author: '' });
 
             React.useEffect(() => {
@@ -36,34 +36,39 @@
 
             const addAgenda = (e) => {
                 e.preventDefault();
-                db.collection('agendas').add({ ...newAgenda, timestamp: Date.now() });
+                db.collection('agendas').add({ ...newAgenda, date: new Date().toLocaleDateString() });
                 setNewAgenda({ title: '', description: '', author: '' });
             };
 
             const deleteAgenda = (id) => db.collection('agendas').doc(id).delete();
 
-            return React.createElement('div', { className: 'p-6 max-w-lg mx-auto' },
-                React.createElement('h1', { className: 'text-2xl font-bold mb-4' }, '구영초 교직원 다모임'),
-                
-                // 관리자 일정 설정 (기존 UI 복구)
-                React.createElement('div', { className: 'bg-indigo-600 text-white p-4 rounded-lg mb-4' },
-                    React.createElement('h2', { className: 'font-bold' }, schedule.title || '일정을 설정하세요'),
-                    React.createElement('p', null, schedule.date, ' / ', schedule.location)
-                ),
+            return React.createElement('div', { className: 'min-h-screen bg-slate-200 p-4 flex justify-center' },
+                React.createElement('div', { className: 'w-full max-w-md bg-white rounded-2xl shadow-xl p-6 border border-slate-300' },
+                    React.createElement('h1', { className: 'text-2xl font-bold mb-6 text-indigo-600 text-center' }, '구영초 교직원 다모임'),
+                    
+                    React.createElement('div', { className: 'bg-indigo-600 text-white p-5 rounded-xl mb-6 shadow-md' },
+                        React.createElement('h2', { className: 'font-bold text-lg' }, schedule.title),
+                        React.createElement('p', { className: 'text-sm opacity-90' }, '일시: ' + schedule.date),
+                        React.createElement('p', { className: 'text-sm opacity-90' }, '장소: ' + schedule.location)
+                    ),
 
-                // 안건 등록 폼
-                React.createElement('form', { onSubmit: addAgenda, className: 'bg-white p-4 rounded shadow mb-4' },
-                    React.createElement('input', { placeholder: '등록자', className: 'block w-full border p-2 mb-2', value: newAgenda.author, onChange: (e) => setNewAgenda({...newAgenda, author: e.target.value}) }),
-                    React.createElement('input', { placeholder: '안건 제목', className: 'block w-full border p-2 mb-2', value: newAgenda.title, onChange: (e) => setNewAgenda({...newAgenda, title: e.target.value}) }),
-                    React.createElement('button', { className: 'bg-blue-500 text-white p-2 w-full' }, '안건 등록')
-                ),
+                    React.createElement('form', { onSubmit: addAgenda, className: 'bg-slate-50 p-4 rounded-lg mb-6 border border-slate-200' },
+                        React.createElement('input', { placeholder: '등록자', className: 'block w-full border p-2 mb-2 rounded', value: newAgenda.author, onChange: (e) => setNewAgenda({...newAgenda, author: e.target.value}) }),
+                        React.createElement('input', { placeholder: '안건 제목', className: 'block w-full border p-2 mb-2 rounded', value: newAgenda.title, onChange: (e) => setNewAgenda({...newAgenda, title: e.target.value}) }),
+                        React.createElement('textarea', { placeholder: '상세 내용', className: 'block w-full border p-2 mb-2 rounded', value: newAgenda.description, onChange: (e) => setNewAgenda({...newAgenda, description: e.target.value}) }),
+                        React.createElement('button', { className: 'bg-indigo-600 text-white p-2 w-full rounded font-bold' }, '안건 등록')
+                    ),
 
-                // 안건 리스트
-                React.createElement('div', { className: 'space-y-2' },
-                    agendas.map(a => React.createElement('div', { key: a.id, className: 'bg-white p-4 rounded flex justify-between shadow' },
-                        React.createElement('div', null, React.createElement('h3', { className: 'font-bold' }, a.title), React.createElement('p', { className: 'text-sm' }, a.author)),
-                        React.createElement('button', { onClick: () => deleteAgenda(a.id), className: 'text-red-500' }, '삭제')
-                    ))
+                    React.createElement('div', { className: 'space-y-4' },
+                        agendas.map(a => React.createElement('div', { key: a.id, className: 'bg-white p-4 rounded shadow border border-slate-200' },
+                            React.createElement('div', { className: 'flex justify-between' },
+                                React.createElement('h3', { className: 'font-bold text-lg' }, a.title),
+                                React.createElement('button', { onClick: () => deleteAgenda(a.id), className: 'text-red-500 text-sm' }, '삭제')
+                            ),
+                            React.createElement('p', { className: 'text-sm text-gray-600' }, a.description),
+                            React.createElement('p', { className: 'text-xs text-indigo-500 mt-2' }, a.author + ' | ' + a.date)
+                        ))
+                    )
                 )
             );
         }
