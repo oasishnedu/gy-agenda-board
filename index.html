@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>구영초 교직원 다모임</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
-    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
@@ -14,7 +14,7 @@
 <body class="bg-slate-100">
     <div id="root"></div>
 
-    <script type="text/babel" data-presets="react">
+    <script type="text/babel">
         const firebaseConfig = {
             apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
             authDomain: "gy-agenda-board.firebaseapp.com",
@@ -32,13 +32,12 @@
         function App() {
             const [agendas, setAgendas] = useState([]);
             const [schedule, setSchedule] = useState({ title: '3월 구영초 교직원 다모임', date: '2026-03-26T15:00', location: '우다다책숲 도서관' });
-            
-            // 데이터 로딩 상태와 상관없이 즉시 화면을 그리기 위해 로딩 로직을 간소화했습니다.
+
             useEffect(() => {
                 const unsubAgendas = db.collection('agendas').onSnapshot(snap => {
                     const data = snap.docs.map(d => ({ id: d.id, ...d.data() }));
                     setAgendas(data.sort((a, b) => Number(b.id) - Number(a.id)));
-                }, (err) => console.error(err));
+                }, (err) => console.error("Firestore 로드 실패:", err));
                 
                 const unsubSchedule = db.collection('schedule').doc('current').onSnapshot(snap => {
                     if (snap.exists) setSchedule(snap.data());
@@ -51,14 +50,12 @@
                     <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 border border-slate-200">
                         <h1 className="text-2xl font-bold text-indigo-600 mb-6 text-center">구영초 교직원 다모임</h1>
                         
-                        {/* 일정 카드 */}
                         <div className="bg-indigo-600 text-white p-5 rounded-xl mb-6 shadow-md">
                             <h2 className="font-bold text-lg mb-1">{schedule.title}</h2>
                             <p className="text-sm opacity-90">일시: {new Date(schedule.date).toLocaleDateString('ko-KR')} 15:00</p>
                             <p className="text-sm opacity-90">장소: {schedule.location}</p>
                         </div>
 
-                        {/* 안건 리스트 */}
                         <h3 className="font-bold text-gray-700 mb-3 border-b pb-2">안건 목록 ({agendas.length}건)</h3>
                         <div className="space-y-3">
                             {agendas.length === 0 ? (
@@ -76,6 +73,7 @@
                 </div>
             );
         }
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
         root.render(<App />);
     </script>
