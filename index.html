@@ -14,10 +14,8 @@
     <div id="root"></div>
 
     <script type="text/babel" data-presets="react">
-        // Firebase는 전역으로 로드된 객체를 사용합니다. (모듈 import 대신 CDN 사용 권장)
-        // 만약 외부 라이브러리 사용 시 아래와 같이 전역 객체로 접근하거나 스크립트 태그로 미리 로드해야 합니다.
-        
-        const { useState, useEffect, useRef } = React;
+        // 모듈 import 문을 제거하고 React 전역 객체를 사용하여 오류를 해결합니다.
+        const { useState } = React;
 
         function App() {
             const [title, setTitle] = useState("구영초 교직원다모임");
