@@ -3,8 +3,10 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
 <title>구영초 교직원다모임</title>
-<!-- React 및 관련 라이브러리 전역 로드 -->
+<!-- React 라이브러리 전역 로드 -->
 <script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
 <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
 <!-- Babel 및 Tailwind -->
@@ -22,7 +24,9 @@ html { font-size: 120% !important; }
 <body class="bg-slate-200">
 <div id="root"></div>
 
-<script type="text/babel" data-presets="react">
+<script type="text/babel">
+// JSX 런타임 문제를 피하기 위해 명시적으로 React.createElement를 사용하거나 
+// Babel 설정을 통해 React를 전역으로 고정합니다.
 const { useState, useEffect, useRef } = React;
 
 const myFirebaseConfig = {
@@ -34,7 +38,6 @@ const myFirebaseConfig = {
     appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
 };
 
-// Firebase 초기화 (import 없이 전역 firebase 객체 사용)
 if (!firebase.apps.length) {
     firebase.initializeApp(myFirebaseConfig);
 }
@@ -46,14 +49,17 @@ const RichEditor = ({ initialValue, onHTMLChange }) => {
     const editorRef = useRef(null);
     useEffect(() => { if (editorRef.current && editorRef.current.innerHTML !== initialValue) editorRef.current.innerHTML = initialValue || ''; }, [initialValue]);
     const execCmd = (cmd, val = null) => { document.execCommand(cmd, false, val); onHTMLChange(editorRef.current.innerHTML); };
-    return (
-        <div className="flex flex-col border border-indigo-100 bg-white rounded-md overflow-hidden">
-            <div className="flex flex-wrap gap-1 p-2 bg-slate-50 border-b">
-                <button type="button" onClick={() => execCmd('bold')} className="px-2 font-bold">B</button>
-                <button type="button" onClick={() => execCmd('italic')} className="px-2 italic">I</button>
-            </div>
-            <div ref={editorRef} contentEditable onInput={(e) => onHTMLChange(e.currentTarget.innerHTML)} className="p-3 min-h-[100px] outline-none text-sm" />
-        </div>
+    return React.createElement('div', { className: 'flex flex-col border border-indigo-100 bg-white rounded-md overflow-hidden' },
+        React.createElement('div', { className: 'flex flex-wrap gap-1 p-2 bg-slate-50 border-b' },
+            React.createElement('button', { type: 'button', onClick: () => execCmd('bold'), className: 'px-2 font-bold' }, 'B'),
+            React.createElement('button', { type: 'button', onClick: () => execCmd('italic'), className: 'px-2 italic' }, 'I')
+        ),
+        React.createElement('div', { 
+            ref: editorRef, 
+            contentEditable: true, 
+            onInput: (e) => onHTMLChange(e.currentTarget.innerHTML), 
+            className: 'p-3 min-h-[100px] outline-none text-sm' 
+        })
     );
 };
 
@@ -67,7 +73,6 @@ function App() {
         auth.signInAnonymously().catch(console.error);
         const unsubAuth = auth.onAuthStateChanged(setUser);
         
-        // 파이어스토어 데이터 구독 (전역 firebase 객체 사용)
         const unsubNotes = db.doc(`artifacts/${appId}/public/data/pastNotes/all`)
             .onSnapshot((docSnap) => {
                 if (docSnap.exists) setPastNotes(docSnap.data().notes || []);
@@ -116,8 +121,9 @@ function App() {
         </div>
     );
 }
+
 const root = ReactDOM.createRoot(document.getElementById('root'));
-root.render(<App />);
+root.render(React.createElement(App));
 </script>
 </body>
 </html>
