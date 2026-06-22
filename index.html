@@ -15,10 +15,14 @@
 
     <script>
         // 1. 기존 파이어베이스 연결 설정 (선생님의 기존 환경 복구)
-        const firebaseConfig = {
-            // 이 부분에 기존에 사용하시던 파이어베이스 설정값을 넣어주셔야 데이터가 보입니다.
-            // 선생님의 Firebase 콘솔에서 확인 가능합니다.
-        };
+const firebaseConfig = {
+  apiKey: "AIzaSyBUswpTXN7GZxUcR50yuieV5hJwaYGHrzQ",
+  authDomain: "gy-agenda-board.firebaseapp.com",
+  projectId: "gy-agenda-board",
+  storageBucket: "gy-agenda-board.firebasestorage.app",
+  messagingSenderId: "636849502282",
+  appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
+};
         if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
