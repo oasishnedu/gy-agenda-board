@@ -10,6 +10,10 @@
 <!-- Babel 및 Tailwind -->
 <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 <script src="https://cdn.tailwindcss.com"></script>
+<!-- Firebase 호환성 라이브러리 전역 로드 -->
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/9.6.0/firebase-firestore-compat.js"></script>
 <style>
 html { font-size: 120% !important; }
 [contenteditable]:empty:before { content: attr(placeholder); color: #94a3b8; pointer-events: none; display: block; }
@@ -18,13 +22,7 @@ html { font-size: 120% !important; }
 <body class="bg-slate-200">
 <div id="root"></div>
 
-<!-- type="module" 대신 text/babel 사용하여 JSX 컴파일 -->
 <script type="text/babel" data-presets="react">
-// CDN 방식을 사용하므로 import 문 대신 전역 객체 접근
-const { initializeApp } = firebase;
-const { getAuth, signInAnonymously, onAuthStateChanged } = firebaseAuth;
-const { getFirestore, doc, onSnapshot, setDoc } = firebaseFirestore;
-
 const { useState, useEffect, useRef } = React;
 
 const myFirebaseConfig = {
@@ -36,9 +34,12 @@ const myFirebaseConfig = {
     appId: "1:636849502282:web:b939a4a1c96a7b52098eb3"
 };
 
-const app = initializeApp(myFirebaseConfig);
-const auth = getAuth(app);
-const db = getFirestore(app);
+// Firebase 초기화
+if (!firebase.apps.length) {
+    firebase.initializeApp(myFirebaseConfig);
+}
+const auth = firebase.auth();
+const db = firebase.firestore();
 const appId = 'guyoung-agenda-board';
 
 const RichEditor = ({ initialValue, onHTMLChange }) => {
@@ -63,12 +64,13 @@ function App() {
     const [showPastNotesModal, setShowPastNotesModal] = useState(false);
 
     useEffect(() => {
-        signInAnonymously(auth).catch(console.error);
-        const unsubAuth = onAuthStateChanged(auth, setUser);
+        auth.signInAnonymously().catch(console.error);
+        const unsubAuth = auth.onAuthStateChanged(setUser);
         
-        const unsubNotes = onSnapshot(doc(db, 'artifacts', appId, 'public', 'data', 'pastNotes', 'all'), (docSnap) => {
-            if (docSnap.exists()) setPastNotes(docSnap.data().notes || []);
-        });
+        const unsubNotes = db.doc(`artifacts/${appId}/public/data/pastNotes/all`)
+            .onSnapshot((docSnap) => {
+                if (docSnap.exists) setPastNotes(docSnap.data().notes || []);
+            });
 
         return () => { unsubAuth(); unsubNotes(); };
     }, []);
@@ -79,7 +81,7 @@ function App() {
 
     const handleSavePastNotes = async () => {
         try {
-            await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'pastNotes', 'all'), { notes: editPastNotesForm });
+            await db.doc(`artifacts/${appId}/public/data/pastNotes/all`).set({ notes: editPastNotesForm });
             setShowPastNotesModal(false);
         } catch (e) { console.error("저장 실패", e); }
     };
@@ -116,9 +118,5 @@ function App() {
 const root = ReactDOM.createRoot(document.getElementById('root'));
 root.render(<App />);
 </script>
-<!-- Firebase 라이브러리를 전역으로 로드 -->
-<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-auth-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore-compat.js"></script>
 </body>
 </html>
