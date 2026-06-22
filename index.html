@@ -4,16 +4,18 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GY 아젠다 보드</title>
+    <!-- Tailwind CSS -->
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- React 및 Babel 로드 -->
+    
+    <!-- 라이브러리 로드: 안정적인 경로 사용 -->
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
 </head>
 <body>
     <div id="root">
-        <div style="padding: 20px; color: #4b5563; font-family: sans-serif;">
-            <h2 id="msg">렌더링 초기화 중...</h2>
+        <div id="status-display" style="padding: 40px; text-align: center; font-family: sans-serif; color: #4b5563;">
+            <h2 id="msg">초기화 시작...</h2>
         </div>
     </div>
 
@@ -21,31 +23,26 @@
         const msgEl = document.getElementById('msg');
         
         try {
-            msgEl.innerText = "React 엔진을 구동합니다...";
+            msgEl.innerText = "데이터 렌더링 중...";
             
-            const App = () => (
-                <div className="flex items-center justify-center h-screen bg-gray-100">
-                    <div className="p-6 bg-white rounded-lg shadow-xl text-center">
-                        <h1 className="text-2xl font-bold text-indigo-600 mb-2">GY 아젠다 보드 성공!</h1>
-                        <p className="text-gray-500 text-sm">정상적으로 화면이 로드되었습니다.</p>
+            // App 컴포넌트 정의
+            const App = () => {
+                return (
+                    <div className="flex items-center justify-center h-screen bg-slate-100">
+                        <div className="p-8 bg-white rounded-2xl shadow-2xl text-center border border-slate-200">
+                            <h1 className="text-3xl font-black text-indigo-600 mb-4">GY 아젠다 보드</h1>
+                            <p className="text-slate-600 font-medium">정상적으로 작동 중입니다.</p>
+                            <p className="text-xs text-slate-400 mt-4">이제 AgendaBoard.jsx의 코드를 여기에 통합할 준비가 되었습니다.</p>
+                        </div>
                     </div>
-                </div>
-            );
+                );
+            };
 
-            const container = document.getElementById('root');
-            const root = ReactDOM.createRoot(container);
-            
-            msgEl.innerText = "화면을 그리는 중입니다...";
+            const root = ReactDOM.createRoot(document.getElementById('root'));
             root.render(<App />);
-            msgEl.style.display = "none";
             
         } catch (err) {
-            msgEl.innerHTML = `
-                <div style="color: red; font-weight: bold;">
-                    렌더링 오류 발생: ${err.message}
-                </div>
-            `;
-            console.error(err);
+            msgEl.innerHTML = `<div style="color: red; font-weight: bold; padding: 20px;">오류 발생: ${err.message}</div>`;
         }
     </script>
 </body>
