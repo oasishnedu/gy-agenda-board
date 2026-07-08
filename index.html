@@ -14,9 +14,10 @@
 <link rel="manifest" href='data:application/manifest+json,{"name":"구영초 교직원다모임","short_name":"다모임보드","display":"standalone","background_color":"#f8fafc","theme_color":"#4f46e5","icons":[{"src":"512icon.png","sizes":"512x512","type":"image/png"}]}'>
 
 <!-- React & Babel & Tailwind CDN -->
-<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
-<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<!-- 🌟 버전을 명시적으로 고정하여 외부 업데이트로 인한 갑작스러운 오류를 방지합니다 -->
+<script src="https://unpkg.com/react@18.3.1/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone@7.23.10/babel.min.js"></script>
 <script>
   // 🌟 중요: Babel의 "react" 프리셋이 기본 설정으로 자동으로 "react/jsx-runtime"을 import하려고 시도하면서
   // 브라우저에서 그 모듈 경로를 해석하지 못해 화면이 하얗게 나오는 문제를 막기 위한 코드입니다.
@@ -239,8 +240,10 @@ const [editAgendaForm, setEditAgendaForm] = useState({ title: '', description: '
 const [selectedFiles, setSelectedFiles] = useState([]); // 선택된 파일 목록
 const [isUploading, setIsUploading] = useState(false);  // 업로드 중 여부
 const [uploadProgress, setUploadProgress] = useState(0); // 업로드 진행률
-const [pendingFiles, setPendingFiles] = useState([]); // 개인정보 확인 전 대기 파일
-const [showPrivacyWarning, setShowPrivacyWarning] = useState(false); // 개인정보 경고 모달
+const [pendingFiles, setPendingFiles] = useState([]);
+const [showPrivacyWarning, setShowPrivacyWarning] = useState(false);
+const [pendingTarget, setPendingTarget] = useState('new');
+const [pendingNoteId, setPendingNoteId] = useState(null); // 회의록 파일 첨부 시 대상 회의록 id
 
 const [schedule, setSchedule] = useState(db ? {} : defaultSchedule);
 const [isEditingSchedule, setIsEditingSchedule] = useState(false);
@@ -433,17 +436,66 @@ const handleFileSelect = (e) => {
     return true;
   });
   if (validFiles.length === 0) { e.target.value = ''; return; }
-  // 파일을 바로 추가하지 않고, 개인정보 경고 확인 후 추가하도록 대기 상태로 저장
   setPendingFiles(validFiles);
+  setPendingTarget('new'); // 새 안건 등록용
   setShowPrivacyWarning(true);
   e.target.value = '';
 };
 
 // 개인정보 경고 모달 - "아니요(개인정보 없음)" 클릭 시 파일 추가
-const handlePrivacyConfirmSafe = () => {
-  setSelectedFiles(prev => [...prev, ...pendingFiles]);
-  setPendingFiles([]);
-  setShowPrivacyWarning(false);
+const handlePrivacyConfirmSafe = async () => {
+  if (pendingTarget === 'new') {
+    // 새 안건 등록 폼에 추가 (업로드는 "추가하기" 버튼 클릭 시 일괄 진행)
+    setSelectedFiles(prev => [...prev, ...pendingFiles]);
+    setPendingFiles([]);
+    setShowPrivacyWarning(false);
+  } else if (pendingTarget === 'edit') {
+    // 안건 수정 폼 — 즉시 Cloudinary 업로드 후 editAgendaForm에 추가
+    setPendingFiles([]);
+    setShowPrivacyWarning(false);
+    setIsUploading(true);
+    try {
+      const uploaded = [];
+      for (let i = 0; i < pendingFiles.length; i++) {
+        const result = await uploadFileToCloudinary(pendingFiles[i]);
+        uploaded.push(result);
+        setUploadProgress(Math.round(((i + 1) / pendingFiles.length) * 100));
+      }
+      setEditAgendaForm(prev => ({
+        ...prev,
+        attachments: [...(prev.attachments || []), ...uploaded]
+      }));
+    } catch(err) {
+      alert('파일 업로드 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  } else if (pendingTarget === 'note') {
+    // 회의록 편집 폼 — 즉시 Cloudinary 업로드 후 해당 회의록에 추가
+    const targetNoteId = pendingNoteId;
+    setPendingFiles([]);
+    setShowPrivacyWarning(false);
+    setIsUploading(true);
+    try {
+      const uploaded = [];
+      for (let i = 0; i < pendingFiles.length; i++) {
+        const result = await uploadFileToCloudinary(pendingFiles[i]);
+        uploaded.push(result);
+        setUploadProgress(Math.round(((i + 1) / pendingFiles.length) * 100));
+      }
+      setEditPastNotesForm(prev => prev.map(n =>
+        n.id === targetNoteId
+          ? { ...n, attachments: [...(n.attachments || []), ...uploaded] }
+          : n
+      ));
+    } catch(err) {
+      alert('파일 업로드 중 오류가 발생했습니다: ' + err.message);
+    } finally {
+      setIsUploading(false);
+      setUploadProgress(0);
+    }
+  }
 };
 
 // 개인정보 경고 모달 - "예(개인정보 포함)" 클릭 시 업로드 차단
@@ -464,12 +516,14 @@ setIsUploading(true);
 setUploadProgress(0);
 
 try {
-  // 선택된 파일들을 Cloudinary에 순서대로 업로드
   const attachments = [];
-  for (let i = 0; i < selectedFiles.length; i++) {
-    const result = await uploadFileToCloudinary(selectedFiles[i]);
-    attachments.push(result);
-    setUploadProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
+  if (selectedFiles.length > 0) {
+    // 파일이 있을 때만 업로드 진행
+    for (let i = 0; i < selectedFiles.length; i++) {
+      const result = await uploadFileToCloudinary(selectedFiles[i]);
+      attachments.push(result);
+      setUploadProgress(Math.round(((i + 1) / selectedFiles.length) * 100));
+    }
   }
 
   const newId = Date.now().toString();
@@ -480,7 +534,7 @@ try {
     author: newAgenda.author,
     date: new Date().toLocaleDateString('ko-KR'),
     createdAt: Date.now(),
-    attachments, // 첨부파일 목록 포함
+    attachments, // 파일 없을 때는 빈 배열 []
   };
 
   if (db) {
@@ -503,10 +557,12 @@ const handleCancelAgendaEdit = () => setEditingAgendaId(null);
 
 const handleSaveAgendaEdit = async () => {
 if (!editAgendaForm.title.trim() || !editAgendaForm.author.trim()) return;
+// attachments가 없는 구버전 데이터도 안전하게 저장되도록 빈 배열로 보정
+const formToSave = { ...editAgendaForm, attachments: editAgendaForm.attachments || [] };
 if (db) {
-await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'agendas', editingAgendaId.toString()), editAgendaForm);
+await setDoc(doc(db, 'artifacts', appId, 'public', 'data', 'agendas', editingAgendaId.toString()), formToSave);
 } else {
-setAgendas(agendas.map(a => a.id === editingAgendaId ? editAgendaForm : a));
+setAgendas(agendas.map(a => a.id === editingAgendaId ? formToSave : a));
 }
 setEditingAgendaId(null);
 };
@@ -547,15 +603,17 @@ return (
     <div className="flex gap-2">
       <button
         onClick={handlePrivacyConfirmBlock}
-        className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors text-sm"
+        disabled={isUploading}
+        className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors text-sm"
       >
         예, 포함되어 있어요
       </button>
       <button
         onClick={handlePrivacyConfirmSafe}
-        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors text-sm"
+        disabled={isUploading}
+        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold rounded-xl transition-colors text-sm"
       >
-        아니요, 없어요
+        {isUploading ? '업로드 중...' : '아니요, 없어요'}
       </button>
     </div>
 
@@ -638,6 +696,50 @@ autoFocus
                             initialValue={note.content} 
                             onHTMLChange={(html) => handleEditPastNoteChange(note.id, 'content', html)} 
 />
+
+                          {/* 📎 회의록 첨부파일 관리 영역 */}
+                          <div className="px-3 pb-3 pt-1 border-t border-slate-100 flex flex-col gap-1.5">
+                            <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1"><Paperclip className="w-3 h-3" />첨부파일</p>
+                            {(note.attachments || []).length > 0 && (
+                              <div className="flex flex-col gap-1">
+                                {(note.attachments || []).map((file, idx) => (
+                                  <div key={idx} className="flex items-center gap-1.5 bg-slate-50 border border-slate-200 rounded px-2 py-1">
+                                    {file.isImage
+                                      ? <Image className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+                                      : <FileText className="w-3 h-3 text-indigo-400 flex-shrink-0" />}
+                                    <a href={file.url} target="_blank" rel="noopener noreferrer" className="text-[10px] text-indigo-600 hover:underline flex-1 truncate">{file.name}</a>
+                                    <button
+                                      type="button"
+                                      onClick={() => handleEditPastNoteChange(note.id, 'attachments', (note.attachments || []).filter((_, i) => i !== idx))}
+                                      className="p-0.5 text-slate-300 hover:text-red-500 transition-colors flex-shrink-0"
+                                      title="첨부파일 삭제"
+                                    >
+                                      <XIcon className="w-3 h-3" />
+                                    </button>
+                                  </div>
+                                ))}
+                              </div>
+                            )}
+                            <label className="flex items-center gap-1.5 px-2 py-1 border border-dashed border-indigo-200 rounded cursor-pointer hover:bg-indigo-50 transition-colors text-indigo-400 hover:text-indigo-600 w-fit">
+                              <PlusCircle className="w-3 h-3" />
+                              <span className="text-[10px]">파일 추가</span>
+                              <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.hwp,.hwpx,.ppt,.pptx,.xls,.xlsx" className="hidden"
+                                onChange={(e) => {
+                                  const files = Array.from(e.target.files).filter(f => {
+                                    if (f.size > 10 * 1024 * 1024) { alert(`"${f.name}"은 10MB 초과입니다.`); return false; }
+                                    return true;
+                                  });
+                                  if (files.length > 0) {
+                                    setPendingFiles(files);
+                                    setPendingTarget('note');
+                                    setPendingNoteId(note.id);
+                                    setShowPrivacyWarning(true);
+                                  }
+                                  e.target.value = '';
+                                }}
+                              />
+                            </label>
+                          </div>
 </div>
 ))}
 
@@ -700,6 +802,31 @@ className="w-full text-left px-4 py-3.5 hover:bg-slate-50 flex justify-between i
                                   )}
 </div>
 )}
+                              {isExpanded && note.attachments && note.attachments.length > 0 && (
+                                <div className="px-4 py-3 border-t border-slate-100 bg-slate-50/30 flex flex-col gap-1.5">
+                                  <p className="text-[10px] text-slate-400 font-medium flex items-center gap-1"><Paperclip className="w-3 h-3" />첨부파일</p>
+                                  {note.attachments.map((file, idx) => (
+                                    file.isImage ? (
+                                      <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer" className="block group">
+                                        <div className="relative rounded-md overflow-hidden border border-slate-200 bg-slate-100" style={{maxHeight:'100px'}}>
+                                          <img src={file.url} alt={file.name} className="w-full object-cover" style={{maxHeight:'100px'}} />
+                                          <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
+                                            <Download className="w-5 h-5 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                                          </div>
+                                        </div>
+                                        <p className="text-[10px] text-slate-400 mt-0.5 truncate">{file.name}</p>
+                                      </a>
+                                    ) : (
+                                      <a key={idx} href={file.url} target="_blank" rel="noopener noreferrer"
+                                        className="flex items-center gap-1.5 px-2 py-1.5 bg-white border border-slate-200 rounded-md hover:bg-indigo-50 hover:border-indigo-200 transition-colors group">
+                                        <FileText className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+                                        <span className="text-xs text-slate-600 group-hover:text-indigo-700 flex-1 truncate">{file.name}</span>
+                                        <Download className="w-3 h-3 text-slate-300 group-hover:text-indigo-500 flex-shrink-0" />
+                                      </a>
+                                    )
+                                  ))}
+                                </div>
+                              )}
 </div>
 );
 })
@@ -963,6 +1090,50 @@ editingAgendaId === agenda.id ? (
 <input type="text" className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.author} onChange={(e) => setEditAgendaForm({...editAgendaForm, author: e.target.value})} placeholder="등록자" />
 <input type="text" className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.title} onChange={(e) => setEditAgendaForm({...editAgendaForm, title: e.target.value})} placeholder="안건 제목" />
 <textarea className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm resize-none min-h-[60px] focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.description} onChange={(e) => setEditAgendaForm({...editAgendaForm, description: e.target.value})} placeholder="상세 내용"></textarea>
+
+{/* 📎 기존 첨부파일 관리 */}
+{editAgendaForm.attachments && editAgendaForm.attachments.length > 0 && (
+  <div className="flex flex-col gap-1">
+    <p className="text-[10px] text-slate-500 font-medium">첨부파일</p>
+    {editAgendaForm.attachments.map((file, idx) => (
+      <div key={idx} className="flex items-center gap-1.5 bg-white border border-slate-200 rounded px-2 py-1">
+        {file.isImage
+          ? <Image className="w-3 h-3 text-indigo-400 flex-shrink-0" />
+          : <FileText className="w-3 h-3 text-indigo-400 flex-shrink-0" />}
+        <span className="text-[10px] text-slate-600 flex-1 truncate">{file.name}</span>
+        <button
+          type="button"
+          onClick={() => setEditAgendaForm({...editAgendaForm, attachments: editAgendaForm.attachments.filter((_, i) => i !== idx)})}
+          className="p-0.5 text-slate-300 hover:text-red-500 transition-colors flex-shrink-0"
+          title="첨부파일 삭제"
+        >
+          <XIcon className="w-3 h-3" />
+        </button>
+      </div>
+    ))}
+  </div>
+)}
+
+{/* 📎 새 파일 추가 */}
+<label className="flex items-center gap-1.5 px-2 py-1.5 border border-dashed border-indigo-200 rounded-md cursor-pointer hover:bg-indigo-50 transition-colors text-indigo-400 hover:text-indigo-600">
+  <Paperclip className="w-3 h-3 flex-shrink-0" />
+  <span className="text-[10px]">새 파일 추가 (최대 10MB)</span>
+  <input type="file" multiple accept="image/*,.pdf,.doc,.docx,.hwp,.hwpx,.ppt,.pptx,.xls,.xlsx" className="hidden"
+    onChange={(e) => {
+      const files = Array.from(e.target.files).filter(f => {
+        if (f.size > 10 * 1024 * 1024) { alert(`"${f.name}"은 10MB 초과입니다.`); return false; }
+        return true;
+      });
+      if (files.length > 0) {
+        setPendingFiles(files);
+        setPendingTarget('edit'); // 수정 폼용임을 표시
+        setShowPrivacyWarning(true);
+      }
+      e.target.value = '';
+    }}
+  />
+</label>
+
 <div className="flex justify-end mt-1">
 <button onClick={handleSaveAgendaEdit} className="flex items-center gap-1 px-2.5 sm:px-3 py-1 sm:py-1.5 bg-indigo-600 text-white font-medium rounded-md hover:bg-indigo-700 transition-colors text-[10px] sm:text-xs">
 <Save className="w-3 h-3" />
