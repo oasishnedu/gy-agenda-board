@@ -239,6 +239,8 @@ const [editAgendaForm, setEditAgendaForm] = useState({ title: '', description: '
 const [selectedFiles, setSelectedFiles] = useState([]); // 선택된 파일 목록
 const [isUploading, setIsUploading] = useState(false);  // 업로드 중 여부
 const [uploadProgress, setUploadProgress] = useState(0); // 업로드 진행률
+const [pendingFiles, setPendingFiles] = useState([]); // 개인정보 확인 전 대기 파일
+const [showPrivacyWarning, setShowPrivacyWarning] = useState(false); // 개인정보 경고 모달
 
 const [schedule, setSchedule] = useState(db ? {} : defaultSchedule);
 const [isEditingSchedule, setIsEditingSchedule] = useState(false);
@@ -423,7 +425,6 @@ const uploadFileToCloudinary = async (file) => {
 
 const handleFileSelect = (e) => {
   const files = Array.from(e.target.files);
-  // 파일 1개당 최대 10MB 제한
   const validFiles = files.filter(f => {
     if (f.size > 10 * 1024 * 1024) {
       alert(`"${f.name}" 파일은 10MB를 초과하여 첨부할 수 없습니다.`);
@@ -431,8 +432,24 @@ const handleFileSelect = (e) => {
     }
     return true;
   });
-  setSelectedFiles(prev => [...prev, ...validFiles]);
-  e.target.value = ''; // 같은 파일 재선택 가능하도록 초기화
+  if (validFiles.length === 0) { e.target.value = ''; return; }
+  // 파일을 바로 추가하지 않고, 개인정보 경고 확인 후 추가하도록 대기 상태로 저장
+  setPendingFiles(validFiles);
+  setShowPrivacyWarning(true);
+  e.target.value = '';
+};
+
+// 개인정보 경고 모달 - "아니요(개인정보 없음)" 클릭 시 파일 추가
+const handlePrivacyConfirmSafe = () => {
+  setSelectedFiles(prev => [...prev, ...pendingFiles]);
+  setPendingFiles([]);
+  setShowPrivacyWarning(false);
+};
+
+// 개인정보 경고 모달 - "예(개인정보 포함)" 클릭 시 업로드 차단
+const handlePrivacyConfirmBlock = () => {
+  setPendingFiles([]);
+  setShowPrivacyWarning(false);
 };
 
 const handleRemoveFile = (index) => {
@@ -504,6 +521,50 @@ setAgendas(agendas.filter(a => a.id !== id));
 
 return (
 <div className="min-h-screen w-full flex flex-col justify-center items-center sm:py-6 lg:py-8 font-sans relative">
+
+{/* 🔒 개인정보 포함 파일 업로드 경고 모달 */}
+{showPrivacyWarning && (
+<div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm flex justify-center items-center z-[70] p-4">
+  <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl border border-slate-100">
+    <div className="flex items-center gap-2 mb-4">
+      <div className="w-9 h-9 rounded-full bg-red-100 flex items-center justify-center flex-shrink-0">
+        <Lock className="w-5 h-5 text-red-500" />
+      </div>
+      <h3 className="text-base font-bold text-slate-800">개인정보 포함 파일 확인</h3>
+    </div>
+
+    <p className="text-sm text-slate-600 mb-3 leading-relaxed">
+      첨부하려는 파일에 아래 항목이 포함되어 있나요?
+    </p>
+
+    <ul className="text-sm text-slate-700 bg-red-50 border border-red-100 rounded-xl p-3.5 mb-5 flex flex-col gap-1.5">
+      <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5 flex-shrink-0">•</span>학생 개인정보가 담긴 문서</li>
+      <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5 flex-shrink-0">•</span>교직원 인사 관련 자료</li>
+      <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5 flex-shrink-0">•</span>성적, 생활기록부 관련 자료</li>
+      <li className="flex items-start gap-2"><span className="text-red-400 mt-0.5 flex-shrink-0">•</span>학부모 연락처 등 개인정보</li>
+    </ul>
+
+    <div className="flex gap-2">
+      <button
+        onClick={handlePrivacyConfirmBlock}
+        className="flex-1 py-2.5 bg-red-500 hover:bg-red-600 text-white font-bold rounded-xl transition-colors text-sm"
+      >
+        예, 포함되어 있어요
+      </button>
+      <button
+        onClick={handlePrivacyConfirmSafe}
+        className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white font-bold rounded-xl transition-colors text-sm"
+      >
+        아니요, 없어요
+      </button>
+    </div>
+
+    <p className="text-[10px] text-slate-400 text-center mt-3 leading-relaxed">
+      "예"를 선택하면 업로드가 차단됩니다.<br/>개인정보 파일이 필요한 경우 출력물로 직접 배포해주세요.
+    </p>
+  </div>
+</div>
+)}
 
 {/* 관리자 로그인 모달 창 */}
 {showAdminModal && (
