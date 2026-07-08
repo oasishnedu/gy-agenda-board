@@ -52,7 +52,7 @@ html { font-size: 120% !important; }
 <div id="root"></div>
 
 <!-- data-type="module" 을 추가하여 실시간 클라우드 모듈을 불러올 수 있게 합니다. -->
-<script type="text/babel" data-type="module" data-presets="react-classic,env">
+<script type="text/babel" data-type="module" data-presets="react-classic">
 import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
 import { getAuth, signInWithCustomToken, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
 import { getFirestore, collection, onSnapshot, doc, setDoc, deleteDoc } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
