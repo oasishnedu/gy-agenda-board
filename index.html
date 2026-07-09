@@ -821,8 +821,7 @@ autoFocus
                                 }}
                               />
                             </label>
-                            {/* 안건 첨부파일이 있을 때만 표시 */}
-                            {agendas.some(a => a.attachments && a.attachments.length > 0) && (
+                            {/* 안건 파일 불러오기 - 항상 표시 */}
                               <button
                                 type="button"
                                 onClick={() => {
@@ -834,7 +833,6 @@ autoFocus
                                 <Paperclip className="w-3 h-3" />
                                 <span className="text-[10px]">안건 파일 불러오기</span>
                               </button>
-                            )}
                             </div>
                           </div>
 </div>
