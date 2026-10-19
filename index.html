@@ -988,7 +988,7 @@ return (
   <div className="flex gap-2 sm:w-2/5">
     <input type="text" placeholder="등록자 *" className="w-1/2 px-3 py-2 sm:py-2.5 text-sm sm:text-base rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500" value={newAgenda.author} onChange={(e) => setNewAgenda({...newAgenda, author: e.target.value})} required />
     <select value={newAgenda.type} onChange={(e) => setNewAgenda({...newAgenda, type: e.target.value})} className={`w-1/2 px-2 py-2 sm:py-2.5 text-sm sm:text-base rounded-md border border-slate-200 focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white font-medium ${!newAgenda.type ? 'text-slate-400' : 'text-slate-700'}`} required>
-      <option value="" disabled hidden>유형</option>
+      <option value="" disabled hidden>유형 *</option>
       <option value="공지" className="text-slate-700">공지</option>
       <option value="토론" className="text-slate-700">토론</option>
       <option value="연수" className="text-slate-700">연수</option>
@@ -1062,15 +1062,15 @@ editingAgendaId === agenda.id ? (
 
 {/* ✨ 공지/토론/연수 수정 폼 */}
 <div className="flex gap-2 mb-1">
-  <input type="text" className="w-1/2 px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.author} onChange={(e) => setEditAgendaForm({...editAgendaForm, author: e.target.value})} placeholder="등록자" />
+  <input type="text" className="w-1/2 px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.author} onChange={(e) => setEditAgendaForm({...editAgendaForm, author: e.target.value})} placeholder="등록자 *" />
   <select className="w-1/2 px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 bg-white" value={editAgendaForm.type || ''} onChange={(e) => setEditAgendaForm({...editAgendaForm, type: e.target.value})}>
-    <option value="" disabled hidden>유형</option>
+    <option value="" disabled hidden>유형 *</option>
     <option value="공지">공지</option>
     <option value="토론">토론</option>
     <option value="연수">연수</option>
   </select>
 </div>
-<input type="text" className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-1" value={editAgendaForm.title} onChange={(e) => setEditAgendaForm({...editAgendaForm, title: e.target.value})} placeholder="안건 제목" />
+<input type="text" className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm focus:outline-none focus:ring-1 focus:ring-indigo-500 mb-1" value={editAgendaForm.title} onChange={(e) => setEditAgendaForm({...editAgendaForm, title: e.target.value})} placeholder="안건 제목 *" />
 
 <textarea className="w-full px-2 py-1.5 rounded-md border border-indigo-200 text-xs sm:text-sm resize-none min-h-[60px] focus:outline-none focus:ring-1 focus:ring-indigo-500" value={editAgendaForm.description} onChange={(e) => setEditAgendaForm({...editAgendaForm, description: e.target.value})} placeholder="상세 내용"></textarea>
 
